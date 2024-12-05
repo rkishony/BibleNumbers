@@ -1,5 +1,5 @@
 from dataclasses import dataclass
-from typing import NamedTuple, List, Dict, Union
+from typing import NamedTuple, List, Dict, Union, Tuple
 
 import numpy as np
 from pydantic import BaseModel
@@ -122,13 +122,7 @@ class VerseAndNumericHebrews:
             else:
                 quote = numeric_hebrew.quote
                 bracket = f" [{numeric_hebrew.number} {numeric_hebrew.entity}]"
-            if not quote == text[start_index:start_index + len(quote)]:
-                print(f"quote: '{quote}'")
-                print(f"text: '{text[start_index:start_index + len(quote)]}'")
-                print(f"start_index: {start_index}")
-                print(f"text: '{text}'")
-                raise ValueError("quote does not match text")
-
+            assert quote == text[start_index:start_index + len(quote)]
             if is_html:
                 if not is_keyword:
                     color = "blue" if is_first else "cyan"
@@ -136,8 +130,7 @@ class VerseAndNumericHebrews:
                     color = "orange"
                 highlighted_text = f"<span style='color:{color}'>{quote}</span>"
                 if bracket:
-                    # slightly darker blue:
-                    bracket_color = "darkblue"
+                    bracket_color = "green"
                     highlighted_text += f"<span style='color:{bracket_color}'>{bracket}</span>"
             else:
                 if not is_keyword:
@@ -156,20 +149,8 @@ class VerseAndNumericHebrews:
     def to_colored_text(self) -> str:
         return self._to_colored_str(is_html=False)
 
-    def to_html(self) -> str:
+    def to_html(self) -> Tuple[str, str]:
         verse_html = self._to_colored_str(is_html=True)
-        location = f"{self.verse.book} {self.verse.chapter} {self.verse.letter}"
+        location_html = f"{self.verse.book} {self.verse.chapter} {self.verse.letter}"
 
-        # DESIGN ("|" is for right alignment)
-        # <rtl verse> | <rtl location> |
-
-        # location as rtl for hebrew text, right aligned and fixed width for alignment
-        location_html = f"<div dir='rtl' style='text-align:right; width: 200px;'>{location}</div>"
-
-        # verse also as rtl for hebrew text
-        verse_html = f"<div dir='rtl'>{verse_html}</div>"
-
-        # right align both. DO NOT add space-between
-        html = f"<div style='display: flex; justify-content: flex-end;'>{verse_html}{location_html}</div>"
-
-        return html
+        return verse_html, location_html

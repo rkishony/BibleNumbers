@@ -2,19 +2,10 @@ from typing import Dict, List
 
 from bible_types import Verse, VerseAndNumericHebrews
 from bible_types import NumericHebrew
+from create_verses_html import create_html_of_verses_with_numbers
 from read_bible import clean_text
 from verses_to_matches import load_or_create_verses_to_numerics
 import matplotlib.pyplot as plt
-
-
-def create_html_of_verses_with_numbers(verses_and_numeric_hebrews: List[VerseAndNumericHebrews], file_name='verses_with_numbers.html'):
-    html = "<html><head><meta charset='UTF-8'></head><body>"
-    for verse_and_numeric_hebrews in verses_and_numeric_hebrews:
-        verse_html = verse_and_numeric_hebrews.to_html()
-        html += verse_html
-    html += "</body></html>"
-    with open(file_name, 'w') as file:
-        file.write(html)
 
 
 def print_verses_with_numbers(verses_and_numeric_hebrews: List[VerseAndNumericHebrews]):
