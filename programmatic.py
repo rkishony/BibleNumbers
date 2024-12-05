@@ -1,56 +1,73 @@
+UNITS_MAP = {
+    'אחת': 1, 'אחד': 1,
+    'שתיים': 2, 'שתי': 2, 'שניים': 2, 'שני': 2,
+    'שלוש': 3, 'שלושה': 3,
+    'ארבע': 4, 'ארבעה': 4,
+    'חמש': 5, 'חמישה': 5,
+    'שש': 6, 'שישה': 6,
+    'שבע': 7, 'שבעה': 7,
+    'שמונה': 8,
+    'תשע': 9, 'תשעה': 9,
+    # Construct forms:
+    'שלושת': 3,
+    'ארבעת': 4,
+    'חמשת': 5,
+    'ששת': 6,
+    'שבעת': 7,
+    'שמונת': 8,
+    'תשעת': 9
+}
+
+TENS_MAP = {
+    'עשר': 10, 'עשרה': 10,
+    'עשרים': 20,
+    'שלושים': 30,
+    'ארבעים': 40,
+    'חמישים': 50,
+    'שישים': 60,
+    'שבעים': 70,
+    'שמונים': 80,
+    'תשעים': 90
+}
+
+UNITS_AND_TENS_MAP = UNITS_MAP | TENS_MAP
+
+HUNDREDS_MAP = {
+    'מאה': 100, 'מאת': 100,
+    'מאתיים': 200
+}
+
+THOUSANDS_MAP = {
+    'אלף': 1000,
+    'אלפיים': 2000
+}
+
+TENTHOUSANDS_MAP = {
+    'רבבה': 10000,
+    'ריבוא': 10000
+}
+
+PLURAL_MAP = {
+    'מאות': 100,
+    'אלפים': 1000,
+    'רבבות': 10000
+}
+
+ALL_PLURAL_MAP = PLURAL_MAP | TENTHOUSANDS_MAP | THOUSANDS_MAP
+
+IGNORE_WORDS = {"שנה", "שנות", "שנים"}
+
+
+def preprocess_token(token: str):
+    """Remove leading ו and return (cleaned_token, is_conjunction)."""
+    is_conjunction = False
+    while token.startswith('ו') and len(token) > 1:
+        token = token[1:]
+        is_conjunction = True
+    return token, is_conjunction
+
+
 def hebrew_num_to_int(phrase: str) -> int:
-    units_map = {
-        'אחת': 1, 'אחד': 1,
-        'שתיים': 2, 'שתי': 2, 'שניים': 2, 'שני': 2,
-        'שלוש': 3, 'שלושה': 3,
-        'ארבע': 4, 'ארבעה': 4,
-        'חמש': 5, 'חמישה': 5,
-        'שש': 6, 'שישה': 6,
-        'שבע': 7, 'שבעה': 7,
-        'שמונה': 8,
-        'תשע': 9, 'תשעה': 9,
-        # Construct forms:
-        'שלושת': 3,
-        'ארבעת': 4,
-        'חמשת': 5,
-        'ששת': 6,
-        'שבעת': 7,
-        'שמונת': 8,
-        'תשעת': 9
-    }
-
-    tens_map = {
-        'עשר': 10, 'עשרה': 10,
-        'עשרים': 20,
-        'שלושים': 30,
-        'ארבעים': 40,
-        'חמישים': 50,
-        'שישים': 60,
-        'שבעים': 70,
-        'שמונים': 80,
-        'תשעים': 90
-    }
-
-    hundreds_map = {
-        'מאה': 100, 'מאת': 100,
-        'מאתיים': 200
-    }
-
-    thousands_map = {
-        'אלף': 1000,
-        'אלפיים': 2000
-    }
-
-    # Ten-thousands:
-    # "רבבה" = 10,000
-    # "ריבוא" = 10,000
-    # "רבבות" = number * 10,000 if preceded by a number, else 10,000
-    tenthousands_map = {
-        'רבבה': 10000,
-        'ריבוא': 10000
-    }
-
-    ignore_words = {"שנה", "שנות", "שנים"}
 
     tokens = phrase.split()
 
@@ -85,28 +102,19 @@ def hebrew_num_to_int(phrase: str) -> int:
             segment_parts.append(new_val)
 
     for token in tokens:
-        # Check for leading 'ו'
-        is_conjunction = False
-        while token.startswith('ו') and len(token) > 1:
-            token = token[1:]
-            is_conjunction = True
+        token, is_conjunction = preprocess_token(token)
 
-        if token in ignore_words:
+        if token in IGNORE_WORDS:
             continue
 
         # Units or construct forms
-        if token in units_map:
-            add_number(units_map[token], is_conjunction)
-            continue
-
-        # Tens
-        if token in tens_map:
-            add_number(tens_map[token], is_conjunction)
+        if token in UNITS_AND_TENS_MAP:
+            add_number(UNITS_AND_TENS_MAP[token], is_conjunction)
             continue
 
         # Hundreds
-        if token in hundreds_map:
-            val = hundreds_map[token]
+        if token in HUNDREDS_MAP:
+            val = HUNDREDS_MAP[token]
             if is_conjunction:
                 # Add 100 or 200
                 current_segment += val
@@ -128,59 +136,16 @@ def hebrew_num_to_int(phrase: str) -> int:
                         segment_parts.append(200)
             continue
 
-        if token == 'מאות':
-            # Plural hundreds
+        if token in ALL_PLURAL_MAP:
+            value = ALL_PLURAL_MAP[token]
             if is_conjunction:
-                current_segment += 100
-                segment_parts.append(100)
+                current_segment += value
+                segment_parts.append(value)
             else:
-                multiply_last(100)
+                multiply_last(value)
             continue
 
-        # Thousands
-        if token in thousands_map:
-            val = thousands_map[token]
-            if is_conjunction:
-                # Add 1000 or 2000
-                current_segment += val
-                segment_parts.append(val)
-            else:
-                multiply_last(val)
-            continue
-
-        if token == 'אלפים':
-            # Like plural thousands
-            if is_conjunction:
-                current_segment += 1000
-                segment_parts.append(1000)
-            else:
-                multiply_last(1000)
-            continue
-
-        # Ten-thousands
-        if token in tenthousands_map:
-            # רבבה or ריבוא = 10,000
-            val = tenthousands_map[token]
-            if is_conjunction:
-                # Add 10,000
-                current_segment += val
-                segment_parts.append(val)
-            else:
-                multiply_last(val)
-            continue
-
-        if token == 'רבבות':
-            # Plural of ten-thousands (x * 10,000)
-            if is_conjunction:
-                current_segment += 10000
-                segment_parts.append(10000)
-            else:
-                multiply_last(10000)
-            continue
-
-        # If we reach here, token not recognized as number
-        # Ignore or you can raise an error if needed
-        # For now, just ignore
+        # token not recognized as number, we can continue or raise an error
         continue
 
     total += current_segment
