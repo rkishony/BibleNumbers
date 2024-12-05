@@ -1,8 +1,20 @@
 from dataclasses import dataclass
-from typing import NamedTuple, List, Dict
+from typing import NamedTuple, List, Dict, Union
 
 import numpy as np
 from pydantic import BaseModel
+
+from numbers_in_words import is_word_in_hebrew_numbers, iter_hebrew_numbers
+
+
+def find_all_start_indices(text, query):
+    start = 0
+    while True:
+        start = text.find(query, start)
+        if start == -1:
+            return
+        yield start
+        start += 1
 
 
 class Verse(NamedTuple):
@@ -47,9 +59,11 @@ class ListOfNumericHebrew(BaseModel):
 
 UNIQUE_QUOTE_COLOR = "\033[31m"  # red
 REPEATED_QUOTE_COLOR = "\033[33m"  # yellow
+NUMBER_KEYWORD_COLOR = "\033[34m"  # blue
 NUMBER_COLOR = "\033[32m"  # green
 
 RESET = "\033[0m"
+WIDTH = 180
 
 
 @dataclass(frozen=True)
@@ -57,7 +71,7 @@ class VerseAndNumericHebrews:
     verse: Verse
     numeric_hebrews: List[NumericHebrew]
 
-    def map_numeric_hebrews(self) -> Dict[NumericHebrew, List[int]]:
+    def map_numeric_hebrews(self) -> Dict[Union[NumericHebrew, str], List[int]]:
         """
         For each numeric hebrew find the index of its first appearance in the verse.
         If the match is already covered, move to the next match.
@@ -66,8 +80,7 @@ class VerseAndNumericHebrews:
         numeric_hebrew_to_indices = {}
         numeric_hebrew_to_all_indices = {}
         for numeric_hebrew in self.numeric_hebrews:
-            quote = numeric_hebrew.quote
-            all_start_indices = [i for i in range(len(self.verse.text)) if self.verse.text.startswith(quote, i)]
+            all_start_indices = list(find_all_start_indices(self.verse.text, numeric_hebrew.quote))
             numeric_hebrew_to_all_indices[numeric_hebrew] = all_start_indices
             numeric_hebrew_to_indices[numeric_hebrew] = []
 
@@ -76,45 +89,87 @@ class VerseAndNumericHebrews:
                 remaining_indices = all_start_indices.copy()
                 for start_index in all_start_indices:
                     remaining_indices.remove(start_index)
-                    if not any(is_covered[start_index:start_index + len(quote)]):
+                    len_quote = len(numeric_hebrew.quote)
+                    if not any(is_covered[start_index:start_index + len_quote]):
                         numeric_hebrew_to_indices[numeric_hebrew].append(start_index)
-                        is_covered[start_index:start_index + len(quote)] = True
+                        is_covered[start_index:start_index + len_quote] = True
                         break
                 numeric_hebrew_to_all_indices[numeric_hebrew] = remaining_indices
+        for numeric_keyword in iter_hebrew_numbers():
+            all_start_indices = list(find_all_start_indices(' ' + self.verse.text + ' ', ' ' + numeric_keyword + ' '))
+            available_indices = []
+            for start_index in all_start_indices:
+                if not any(is_covered[start_index:start_index + len(numeric_keyword)]):
+                    available_indices.append(start_index)
+                    is_covered[start_index:start_index + len(numeric_keyword)] = True
+            if available_indices:
+                numeric_hebrew_to_indices[numeric_keyword] = available_indices
         return numeric_hebrew_to_indices
 
-    def _to_colored_str(self, is_html: bool, with_non_matching: bool = True) -> str:
+    def _to_colored_str(self, is_html: bool) -> str:
         text = self.verse.text
         numeric_hebrew_to_indices = self.map_numeric_hebrews()
         indices_to_numeric_hebrew_and_is_first = {index: (numeric_hebrew, k == 0)
                                                   for numeric_hebrew, indices in numeric_hebrew_to_indices.items()
                                                   for k, index in enumerate(indices)}
-        # sort by index in descending order
+        text_len = len(text)
         for start_index, (numeric_hebrew, is_first) in sorted(indices_to_numeric_hebrew_and_is_first.items(),
                                                               key=lambda x: x[0], reverse=True):
-            quote = numeric_hebrew.quote
-            number = numeric_hebrew.number
-            entity = numeric_hebrew.entity
-            if is_html:
-                if is_first:
-                    color = "red"
-                else:
-                    color = "yellow"
-                highlighted_text = f"<span style='color:{color}'>{quote}</span><span style='color:green'> [{number} {entity}]</span>"
+            is_keyword = isinstance(numeric_hebrew, str)
+            if is_keyword:
+                quote = numeric_hebrew
+                bracket = ""
             else:
-                if is_first:
-                    color = UNIQUE_QUOTE_COLOR
+                quote = numeric_hebrew.quote
+                bracket = f" [{numeric_hebrew.number} {numeric_hebrew.entity}]"
+            if not quote == text[start_index:start_index + len(quote)]:
+                print(f"quote: '{quote}'")
+                print(f"text: '{text[start_index:start_index + len(quote)]}'")
+                print(f"start_index: {start_index}")
+                print(f"text: '{text}'")
+                raise ValueError("quote does not match text")
+
+            if is_html:
+                if not is_keyword:
+                    color = "blue" if is_first else "cyan"
                 else:
-                    color = REPEATED_QUOTE_COLOR
-                highlighted_text = f"{color}{quote}{RESET}{NUMBER_COLOR} [{number} {entity}]{RESET}"
+                    color = "orange"
+                highlighted_text = f"<span style='color:{color}'>{quote}</span>"
+                if bracket:
+                    # slightly darker blue:
+                    bracket_color = "darkblue"
+                    highlighted_text += f"<span style='color:{bracket_color}'>{bracket}</span>"
+            else:
+                if not is_keyword:
+                    color = UNIQUE_QUOTE_COLOR if is_first else REPEATED_QUOTE_COLOR
+                else:
+                    color = NUMBER_KEYWORD_COLOR
+                highlighted_text = f"{color}{quote}{RESET}"
+                if bracket:
+                    highlighted_text += f"{NUMBER_COLOR}{bracket}{RESET}"
+            text_len += len(bracket)
             text = text[:start_index] + highlighted_text + text[start_index + len(quote):]
         if not is_html:
-            # add spaces to align the text:
-            color_marks_len = len(UNIQUE_QUOTE_COLOR) + len(RESET) + len(NUMBER_COLOR) + len(RESET)
+            text = " " * (WIDTH - text_len) + text
         return text
 
     def to_colored_text(self) -> str:
         return self._to_colored_str(is_html=False)
 
     def to_html(self) -> str:
-        return self._to_colored_str(is_html=True)
+        verse_html = self._to_colored_str(is_html=True)
+        location = f"{self.verse.book} {self.verse.chapter} {self.verse.letter}"
+
+        # DESIGN ("|" is for right alignment)
+        # <rtl verse> | <rtl location> |
+
+        # location as rtl for hebrew text, right aligned and fixed width for alignment
+        location_html = f"<div dir='rtl' style='text-align:right; width: 200px;'>{location}</div>"
+
+        # verse also as rtl for hebrew text
+        verse_html = f"<div dir='rtl'>{verse_html}</div>"
+
+        # right align both. DO NOT add space-between
+        html = f"<div style='display: flex; justify-content: flex-end;'>{verse_html}{location_html}</div>"
+
+        return html

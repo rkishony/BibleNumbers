@@ -1,47 +1,16 @@
 from chatgpt import get_numbers_from_verses_using_llm, get_matching_verse
+from numbers_in_words import NUMBERS, is_numbers_in_verse
 from read_bible import BIBLE
 from verses_to_matches import load_or_create_verses_to_numerics, dump_verses_to_numerics
-
-NUMBERS = {
-1: 'אחד, אחת',
-2: 'שניים, שתיים, שני, שתי',
-3: 'שלוש, שלושה, שלושת',
-4: 'ארבע, ארבעה, ארבעת',
-5: 'חמש, חמישה, חמשת',
-6: 'שש, ששהֿ, ששת',
-7: 'שבע, שיבעה, שבעת',
-8: 'שמונה, שמונת',
-9: 'תשע, תשעה, תשעת',
-10: 'עשר',
-100: 'מאה',
-1000: 'אלף',
-10000: 'רבבה',
-}
-
-
-NUMBERS_TO_HEBREW_NUMBERS = {number: [word.strip() for word in hebrew.split(",")] for number, hebrew in NUMBERS.items()}
-
-
-def get_hatayot(hebrew_number):
-    return [hebrew_number, 'ו' + hebrew_number]
-
-
-def is_number_in_verse(verse, number):
-    words = verse.text.strip(' ').split(' ')
-    for hebrew_number in NUMBERS_TO_HEBREW_NUMBERS[number]:
-        for hataya in get_hatayot(hebrew_number):
-            if hataya in words:
-                return True
-    return False
 
 
 def get_verses_with_numbers():
     verses = []
     for verse in BIBLE:
-        for number in NUMBERS:
-            if is_number_in_verse(verse, number):
-                verses.append(verse)
-                break
+        if is_numbers_in_verse(verse):
+            verses.append(verse)
+            break
+
     return verses
 
 
