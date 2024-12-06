@@ -61,7 +61,7 @@ class VerseAndNumericHebrews:
     verse: Verse
     numeric_hebrews: List[NumericHebrew]
 
-    def map_numeric_hebrews(self) -> Dict[Union[NumericHebrew, str], List[int]]:
+    def map_numeric_hebrews(self, show_only_one_match: bool = True) -> Dict[Union[NumericHebrew, str], List[int]]:
         """
         For each numeric hebrew find the index of its first appearance in the verse.
         If the match is already covered, move to the next match.
@@ -87,6 +87,8 @@ class VerseAndNumericHebrews:
                         is_covered[start_index:start_index + len_quote] = True
                         break
                 numeric_hebrew_to_all_indices[numeric_hebrew] = remaining_indices
+            if show_only_one_match:
+                break
         for numeric_keyword in iter_hebrew_numbers():
             all_start_indices = list(find_all_start_indices(' ' + self.verse.text + ' ', ' ' + numeric_keyword + ' '))
             available_indices = []
@@ -113,7 +115,10 @@ class VerseAndNumericHebrews:
                 bracket = ""
             else:
                 quote = numeric_hebrew.quote
-                bracket = f" [{numeric_hebrew.number} {numeric_hebrew.entity}]"
+                if numeric_hebrew.entity:
+                    bracket = f" [{numeric_hebrew.number} {numeric_hebrew.entity}]"
+                else:
+                    bracket = f" [{numeric_hebrew.number}]"
             assert quote == text[start_index:start_index + len(quote)]
             if is_html:
                 if not is_keyword:
