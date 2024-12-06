@@ -1,6 +1,6 @@
 import pytest
 
-from programmatic import hebrew_num_to_int
+from programmatic import hebrew_num_to_int, extract_number_phrases
 
 
 @pytest.mark.parametrize("hebrew, expected", [
@@ -21,6 +21,39 @@ from programmatic import hebrew_num_to_int
     ("אלף אלפים", 1000000),
     ("שמונת אלפים", 8000),
     ("ריבוא ושמונת אלפים", 18000),
+    ("שתים עשרה שנה ותשע מאות שנה", 912),
 ])
 def test_hebrew_num_to_int(hebrew, expected):
     assert hebrew_num_to_int(hebrew) == expected
+
+
+@pytest.mark.parametrize(
+    "verse,expected",
+    [
+        (
+            "ומן הדני עורכי מלחמה עשרים ושמונה אלף ושש מאות",
+            ["עשרים ושמונה אלף ושש מאות"]
+        ),
+        (
+            "שישה נולד לו בחברון וימלוך שם שבע שנים ושישה חודשים ושלושים ושלוש שנה מלך בירושלים",
+            ["שישה", "שבע שנים ושישה חודשים ושלושים ושלוש שנה"]
+        ),
+        (
+            "ויהיו כל ימי שת שתים עשרה שנה ותשע מאות שנה וימות",
+            ["שתים עשרה שנה ותשע מאות שנה"]
+        ),
+        # A verse with no numbers
+        (
+            "והארץ היתה תהו ובהו וחשך על פני תהום",
+            []
+        ),
+        # A verse with multiple separate number phrases
+        (
+            "חמש עשרה שנה ועשרים וארבעה אלף ושש מאות איש",
+            ["חמש עשרה שנה", "ועשרים וארבעה אלף ושש מאות"]
+        ),
+    ]
+)
+def test_extract_number_phrases(verse, expected):
+    result = extract_number_phrases(verse)
+    assert result == expected

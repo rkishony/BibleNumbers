@@ -2,8 +2,7 @@ import json
 import os
 from typing import Dict, List, Set
 
-from bible_types import Verse
-from chatgpt import NumericHebrew
+from bible_types import Verse, NumericHebrew
 
 FILE_NAME = 'verses_to_numerics.json'
 

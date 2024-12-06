@@ -1,14 +1,8 @@
-from typing import Optional
-
-from bible_types import Verses
-from read_bible import BIBLE
-
-
-def search_in_bible(quote: str, verses: Verses = BIBLE, expected: Optional[int] = None) -> Verses:
-    """
-    Search for a quote in the Bible and return the verses that contain it.
-    """
-    verses = [verse for verse in verses if quote in verse.text]
-    if expected is not None and len(verses) != expected:
-        raise ValueError(f"Expected {expected} verses, but found {len(verses)}")
-    return verses
+def find_all_start_indices(text, query):
+    start = 0
+    while True:
+        start = text.find(query, start)
+        if start == -1:
+            return
+        yield start
+        start += 1

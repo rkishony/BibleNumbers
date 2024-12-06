@@ -4,17 +4,7 @@ from typing import NamedTuple, List, Dict, Union, Tuple
 import numpy as np
 from pydantic import BaseModel
 
-from numbers_in_words import is_word_in_hebrew_numbers, iter_hebrew_numbers
-
-
-def find_all_start_indices(text, query):
-    start = 0
-    while True:
-        start = text.find(query, start)
-        if start == -1:
-            return
-        yield start
-        start += 1
+from utils import find_all_start_indices
 
 
 class Verse(NamedTuple):
@@ -76,6 +66,8 @@ class VerseAndNumericHebrews:
         For each numeric hebrew find the index of its first appearance in the verse.
         If the match is already covered, move to the next match.
         """
+        from programmatic import iter_hebrew_numbers
+
         is_covered = np.zeros(len(self.verse.text), dtype=bool)
         numeric_hebrew_to_indices = {}
         numeric_hebrew_to_all_indices = {}

@@ -1,3 +1,5 @@
+from read_bible import get_bible
+
 UNITS_MAP = {
     'אחת': 1, 'אחד': 1,
     'שתיים': 2, 'שתי': 2, 'שניים': 2, 'שני': 2,
@@ -8,6 +10,7 @@ UNITS_MAP = {
     'שבע': 7, 'שבעה': 7,
     'שמונה': 8,
     'תשע': 9, 'תשעה': 9,
+
     # Construct forms:
     'שלושת': 3,
     'ארבעת': 4,
@@ -15,7 +18,10 @@ UNITS_MAP = {
     'ששת': 6,
     'שבעת': 7,
     'שמונת': 8,
-    'תשעת': 9
+    'תשעת': 9,
+
+    # Conjunctive forms:
+    'שתים': 2,
 }
 
 TENS_MAP = {
@@ -55,7 +61,11 @@ PLURAL_MAP = {
 
 ALL_PLURAL_MAP = PLURAL_MAP | TENTHOUSANDS_MAP | THOUSANDS_MAP
 
-IGNORE_WORDS = {"שנה", "שנות", "שנים"}
+
+ALL_NUMBER_WORDS = set(UNITS_AND_TENS_MAP) | set(HUNDREDS_MAP) | set(ALL_PLURAL_MAP)
+
+
+IGNORE_WORDS = {"שנה", "שנות", "שנים", "חודש", "חודשים"}
 
 
 def preprocess_token(token: str):
@@ -150,3 +160,72 @@ def hebrew_num_to_int(phrase: str) -> int:
 
     total += current_segment
     return total
+
+
+def extract_number_phrases(verse: str) -> list[str]:
+
+    tokens = verse.split()
+    phrases = []
+    current_phrase = []
+    phrase_active = False  # Indicates whether we are currently inside a number phrase
+
+    for i, raw_token in enumerate(tokens):
+        # Preprocess token to identify if it's conjunction and remove leading 'ו'
+        token, is_conjunction = preprocess_token(raw_token)
+
+        # Check if token is a number word or in the ignore words
+        if token in ALL_NUMBER_WORDS:
+            # Start or continue a phrase
+            current_phrase.append(raw_token)
+            phrase_active = True
+        elif phrase_active and token in IGNORE_WORDS:
+            # If 'שנה' appears in the middle of a phrase, include it temporarily
+            current_phrase.append(raw_token)
+
+            # Look ahead to check if another 'שנה' exists at the end of this phrase
+            look_ahead_tokens = tokens[i + 1:]
+            has_following_shana = any(
+                preprocess_token(t)[0] in IGNORE_WORDS for t in look_ahead_tokens
+            )
+            if not has_following_shana:
+                # If no more 'שנה' appears later, finalize the current phrase
+                phrases.append(" ".join(current_phrase))
+                current_phrase = []
+                phrase_active = False
+        else:
+            # Not a number word or ignore word while phrase_active
+            # means we should end the current phrase (if it exists)
+            if phrase_active:
+                phrases.append(" ".join(current_phrase))
+                current_phrase = []
+                phrase_active = False
+
+    # If something left in current_phrase at the end, add it
+    if phrase_active and current_phrase:
+        phrases.append(" ".join(current_phrase))
+
+    return phrases
+
+
+def iter_hebrew_numbers(with_hatayot: bool = True):
+    for unit in ALL_NUMBER_WORDS:
+        yield unit
+        # add ו
+        yield f"ו{unit}"
+
+
+def is_word_in_hebrew_numbers(word: str) -> bool:
+    return word in iter_hebrew_numbers()
+
+
+def is_numbers_in_verse(verse) -> bool:
+    return any(is_word_in_hebrew_numbers(word) for word in verse.split(' '))
+
+
+def get_verses_with_numbers():
+    verses = []
+    for verse in get_bible():
+        if is_numbers_in_verse(verse.text):
+            verses.append(verse)
+
+    return verses

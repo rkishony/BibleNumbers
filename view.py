@@ -1,9 +1,7 @@
-from typing import Dict, List
+from typing import List
 
-from bible_types import Verse, VerseAndNumericHebrews
-from bible_types import NumericHebrew
+from bible_types import VerseAndNumericHebrews
 from create_verses_html import create_html_of_verses_with_numbers
-from read_bible import clean_text
 from verses_to_matches import load_or_create_verses_to_numerics
 import matplotlib.pyplot as plt
 

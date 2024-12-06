@@ -1,6 +1,5 @@
-import pickle
 from pathlib import Path
-from typing import List, Tuple
+from typing import List
 
 from bs4 import BeautifulSoup
 
@@ -8,6 +7,8 @@ from bible_types import Verse, Verses
 
 ROOT_DIRECTORY = Path(__file__).parent
 BOOKS_DIRECTORY = ROOT_DIRECTORY / "books"
+
+BIBLE = None
 
 
 def get_all_html_files() -> List[str]:
@@ -23,7 +24,7 @@ def clean_text(s):
     s = s.strip()
     for char in ['-', '\n', '\r', '\t', '־', '  ']:
         s = s.replace(char, ' ')
-    s = ''.join([c for c in s if 'א' <= c <= 'ת' or c == ' '])
+    s = ''.join([c for c in s if 'א' <= c <= 'ת' or c in [' ', '{', '}']])
     return s
 
 
@@ -48,12 +49,16 @@ def get_book_from_html(html_content: str) -> Verses:
 
 
 def get_bible() -> Verses:
+    global BIBLE
+    if BIBLE is not None:
+        return BIBLE
+
     verse = []
     for file_name in get_all_html_files():
         html = get_html(file_name)
         book = get_book_from_html(html)
         verse.extend(book)
+    BIBLE = verse
     return verse
 
 
-BIBLE = get_bible()

@@ -9,7 +9,7 @@ from openai import OpenAI
 
 from bible_types import Verse, Verses, NumericHebrew
 from read_bible import clean_text
-from utils import search_in_bible
+from bible_utils import search_in_bible
 
 MODEL = "gpt-4o"
 

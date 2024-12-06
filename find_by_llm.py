@@ -1,18 +1,6 @@
 from chatgpt import get_numbers_from_verses_using_llm, get_matching_verse
-from numbers_in_words import NUMBERS, is_numbers_in_verse
-from read_bible import BIBLE
+from programmatic import get_verses_with_numbers
 from verses_to_matches import load_or_create_verses_to_numerics, dump_verses_to_numerics
-
-
-def get_verses_with_numbers():
-    verses = []
-    for verse in BIBLE:
-        if is_numbers_in_verse(verse):
-            verses.append(verse)
-            break
-
-    return verses
-
 
 BATCH_SIZE = 10
 
