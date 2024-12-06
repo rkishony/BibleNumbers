@@ -40,7 +40,7 @@ class NumericHebrew(BaseModel):
             '}'
 
     def __hash__(self):
-        return hash((self.book, self.chapter, self.letter, self.quote, self.number, self.entity))
+        return id(self)
 
 
 class ListOfNumericHebrew(BaseModel):

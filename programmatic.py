@@ -1,3 +1,6 @@
+from enum import Enum
+from typing import Optional
+
 from read_bible import get_bible
 
 UNITS_MAP = {
@@ -68,13 +71,19 @@ ALL_NUMBER_WORDS = set(UNITS_AND_TENS_MAP) | set(HUNDREDS_MAP) | set(ALL_PLURAL_
 IGNORE_WORDS = {"שנה", "שנות", "שנים", "חודש", "חודשים"}
 
 
-def preprocess_token(token: str):
-    """Remove leading ו and return (cleaned_token, is_conjunction)."""
-    is_conjunction = False
-    while token.startswith('ו') and len(token) > 1:
-        token = token[1:]
-        is_conjunction = True
-    return token, is_conjunction
+class ConjugateLetter(Enum):
+    """Conjugate letters for numbers."""
+    BET = 'ב'
+    VAV = 'ו'
+    HEY = 'ה'
+
+
+def preprocess_token(token: str) -> tuple[str, Optional[ConjugateLetter]]:
+    """Preprocess token to identify if it's a conjunction and remove leading 'ו'."""
+    for letter in ConjugateLetter:
+        if token.startswith(letter.value):
+            return token[1:], letter
+    return token, None
 
 
 def hebrew_num_to_int(phrase: str) -> int:
@@ -85,9 +94,9 @@ def hebrew_num_to_int(phrase: str) -> int:
     current_segment = 0
     segment_parts = []  # track numbers added in the current segment
 
-    def add_number(num, is_conjunction):
+    def add_number(num, conjugate_letter):
         nonlocal current_segment, segment_parts
-        if is_conjunction:
+        if conjugate_letter:
             current_segment += num
             segment_parts.append(num)
         else:
@@ -112,20 +121,20 @@ def hebrew_num_to_int(phrase: str) -> int:
             segment_parts.append(new_val)
 
     for token in tokens:
-        token, is_conjunction = preprocess_token(token)
+        token, conjugate_letter = preprocess_token(token)
 
         if token in IGNORE_WORDS:
             continue
 
         # Units or construct forms
         if token in UNITS_AND_TENS_MAP:
-            add_number(UNITS_AND_TENS_MAP[token], is_conjunction)
+            add_number(UNITS_AND_TENS_MAP[token], conjugate_letter)
             continue
 
         # Hundreds
         if token in HUNDREDS_MAP:
             val = HUNDREDS_MAP[token]
-            if is_conjunction:
+            if conjugate_letter:
                 # Add 100 or 200
                 current_segment += val
                 segment_parts.append(val)
@@ -148,7 +157,7 @@ def hebrew_num_to_int(phrase: str) -> int:
 
         if token in ALL_PLURAL_MAP:
             value = ALL_PLURAL_MAP[token]
-            if is_conjunction:
+            if conjugate_letter:
                 current_segment += value
                 segment_parts.append(value)
             else:
@@ -160,51 +169,6 @@ def hebrew_num_to_int(phrase: str) -> int:
 
     total += current_segment
     return total
-
-
-def extract_number_phrases(verse: str) -> list[str]:
-
-    tokens = verse.split()
-    phrases = []
-    current_phrase = []
-    phrase_active = False  # Indicates whether we are currently inside a number phrase
-
-    for i, raw_token in enumerate(tokens):
-        # Preprocess token to identify if it's conjunction and remove leading 'ו'
-        token, is_conjunction = preprocess_token(raw_token)
-
-        # Check if token is a number word or in the ignore words
-        if token in ALL_NUMBER_WORDS:
-            # Start or continue a phrase
-            current_phrase.append(raw_token)
-            phrase_active = True
-        elif phrase_active and token in IGNORE_WORDS:
-            # If 'שנה' appears in the middle of a phrase, include it temporarily
-            current_phrase.append(raw_token)
-
-            # Look ahead to check if another 'שנה' exists at the end of this phrase
-            look_ahead_tokens = tokens[i + 1:]
-            has_following_shana = any(
-                preprocess_token(t)[0] in IGNORE_WORDS for t in look_ahead_tokens
-            )
-            if not has_following_shana:
-                # If no more 'שנה' appears later, finalize the current phrase
-                phrases.append(" ".join(current_phrase))
-                current_phrase = []
-                phrase_active = False
-        else:
-            # Not a number word or ignore word while phrase_active
-            # means we should end the current phrase (if it exists)
-            if phrase_active:
-                phrases.append(" ".join(current_phrase))
-                current_phrase = []
-                phrase_active = False
-
-    # If something left in current_phrase at the end, add it
-    if phrase_active and current_phrase:
-        phrases.append(" ".join(current_phrase))
-
-    return phrases
 
 
 def iter_hebrew_numbers(with_hatayot: bool = True):
@@ -220,6 +184,45 @@ def is_word_in_hebrew_numbers(word: str) -> bool:
 
 def is_numbers_in_verse(verse) -> bool:
     return any(is_word_in_hebrew_numbers(word) for word in verse.split(' '))
+
+
+def extract_number_phrases(verse: str) -> list[str]:
+
+    tokens = verse.split()
+    phrases = []
+    current_phrase = []
+
+    def terminate_phrase():
+        if current_phrase:
+            phrases.append(" ".join(current_phrase))
+            current_phrase.clear()
+
+    for i, raw_token in enumerate(tokens):
+        # Preprocess token to identify if it's conjunction and remove leading 'ו'
+        token, conjugate_letter = preprocess_token(raw_token)
+        # Check if token is a number word or in the ignore words
+        if token in ALL_NUMBER_WORDS:
+            # if conjugate_letter in {ConjugateLetter.BET, ConjugateLetter.HEY}:
+            #     terminate_phrase()
+            # Start or continue a phrase
+            current_phrase.append(raw_token)
+            # terminate if end of sentence, or for שנים שנים
+            if i == len(tokens) - 1 or tokens[i + 1] == token:
+                terminate_phrase()
+        elif token in IGNORE_WORDS and current_phrase:
+            # If 'שנה' appears we include it
+            current_phrase.append(raw_token)
+
+            # Look ahead to check if another 'שנה' exists at the end of this phrase
+            look_ahead_tokens = tokens[i + 1:]
+            has_following_shana = any(preprocess_token(t)[0] in IGNORE_WORDS for t in look_ahead_tokens)
+            if not has_following_shana:
+                terminate_phrase()
+        else:
+            # Not a number word or ignore word while phrase_active
+            terminate_phrase()
+
+    return phrases
 
 
 def get_verses_with_numbers():

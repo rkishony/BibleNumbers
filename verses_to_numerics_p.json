@@ -698,8 +698,16 @@
             "book": "בראשית",
             "chapter": "ז",
             "letter": "ב",
-            "quote": "שבעה שבעה",
-            "number": 14,
+            "quote": "שבעה",
+            "number": 7,
+            "entity": ""
+        },
+        {
+            "book": "בראשית",
+            "chapter": "ז",
+            "letter": "ב",
+            "quote": "שבעה",
+            "number": 7,
             "entity": ""
         },
         {
@@ -722,8 +730,16 @@
             "book": "בראשית",
             "chapter": "ז",
             "letter": "ג",
-            "quote": "שבעה שבעה",
-            "number": 14,
+            "quote": "שבעה",
+            "number": 7,
+            "entity": ""
+        },
+        {
+            "book": "בראשית",
+            "chapter": "ז",
+            "letter": "ג",
+            "quote": "שבעה",
+            "number": 7,
             "entity": ""
         }
     ],
@@ -786,8 +802,16 @@
             "book": "בראשית",
             "chapter": "ז",
             "letter": "ט",
-            "quote": "שניים שניים",
-            "number": 4,
+            "quote": "שניים",
+            "number": 2,
+            "entity": ""
+        },
+        {
+            "book": "בראשית",
+            "chapter": "ז",
+            "letter": "ט",
+            "quote": "שניים",
+            "number": 2,
             "entity": ""
         }
     ],
@@ -866,8 +890,16 @@
             "book": "בראשית",
             "chapter": "ז",
             "letter": "טו",
-            "quote": "שניים שניים",
-            "number": 4,
+            "quote": "שניים",
+            "number": 2,
+            "entity": ""
+        },
+        {
+            "book": "בראשית",
+            "chapter": "ז",
+            "letter": "טו",
+            "quote": "שניים",
+            "number": 2,
             "entity": ""
         }
     ],
@@ -13010,8 +13042,16 @@
             "book": "במדבר",
             "chapter": "ג",
             "letter": "מז",
-            "quote": "חמשת חמשת",
-            "number": 10,
+            "quote": "חמשת",
+            "number": 5,
+            "entity": ""
+        },
+        {
+            "book": "במדבר",
+            "chapter": "ג",
+            "letter": "מז",
+            "quote": "חמשת",
+            "number": 5,
             "entity": ""
         },
         {
@@ -15274,8 +15314,16 @@
             "book": "במדבר",
             "chapter": "ז",
             "letter": "פו",
-            "quote": "עשרה עשרה",
-            "number": 20,
+            "quote": "עשרה",
+            "number": 10,
+            "entity": ""
+        },
+        {
+            "book": "במדבר",
+            "chapter": "ז",
+            "letter": "פו",
+            "quote": "עשרה",
+            "number": 10,
             "entity": ""
         },
         {
@@ -29546,8 +29594,16 @@
             "book": "מלכים",
             "chapter": "א ז",
             "letter": "ג",
-            "quote": "ארבעים וחמישה חמישה עשר",
-            "number": 60,
+            "quote": "ארבעים וחמישה",
+            "number": 45,
+            "entity": ""
+        },
+        {
+            "book": "מלכים",
+            "chapter": "א ז",
+            "letter": "ג",
+            "quote": "חמישה עשר",
+            "number": 15,
             "entity": ""
         }
     ],
@@ -31290,8 +31346,16 @@
             "book": "מלכים",
             "chapter": "א יח",
             "letter": "יג",
-            "quote": "חמישים חמישים",
-            "number": 100,
+            "quote": "חמישים",
+            "number": 50,
+            "entity": ""
+        },
+        {
+            "book": "מלכים",
+            "chapter": "א יח",
+            "letter": "יג",
+            "quote": "חמישים",
+            "number": 50,
             "entity": ""
         }
     ],
@@ -36858,8 +36922,16 @@
             "book": "יחזקאל",
             "chapter": "י",
             "letter": "כא",
-            "quote": "ארבעה ארבעה",
-            "number": 8,
+            "quote": "ארבעה",
+            "number": 4,
+            "entity": ""
+        },
+        {
+            "book": "יחזקאל",
+            "chapter": "י",
+            "letter": "כא",
+            "quote": "ארבעה",
+            "number": 4,
             "entity": ""
         },
         {
@@ -44490,8 +44562,16 @@
             "book": "דברי הימים",
             "chapter": "א כו",
             "letter": "יז",
-            "quote": "שניים שניים",
-            "number": 4,
+            "quote": "שניים",
+            "number": 2,
+            "entity": ""
+        },
+        {
+            "book": "דברי הימים",
+            "chapter": "א כו",
+            "letter": "יז",
+            "quote": "שניים",
+            "number": 2,
             "entity": ""
         }
     ],
