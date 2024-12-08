@@ -6,17 +6,17 @@ from bs4 import BeautifulSoup
 from bible_types import Verse, Verses
 
 ROOT_DIRECTORY = Path(__file__).parent
-BOOKS_DIRECTORY = ROOT_DIRECTORY / "books"
 
-BIBLE = None
+BIBLES = dict()
 
 
-def get_all_html_files() -> List[str]:
-    return sorted([str(file) for file in BOOKS_DIRECTORY.glob("*.htm")])
+def get_all_html_files(boos_dir: str) -> List[str]:
+    books_folder = ROOT_DIRECTORY / boos_dir
+    return sorted([str(file) for file in books_folder.glob("*.htm")])
 
 
 def get_html(file_name: str) -> str:
-    with open(file_name, "r", encoding="windows-1255") as file:
+    with open(file_name, "r", encoding="windows-1255", errors="ignore") as file:
         return file.read()
 
 
@@ -24,7 +24,7 @@ def clean_text(s):
     s = s.strip()
     for char in ['-', '\n', '\r', '\t', '־', '  ']:
         s = s.replace(char, ' ')
-    s = ''.join([c for c in s if 'א' <= c <= 'ת' or c in [' ', '{', '}']])
+    # s = ''.join([c for c in s if 'א' <= c <= 'ת' or c in [' ', '{', '}']])
     return s
 
 
@@ -42,23 +42,29 @@ def get_book_from_html(html_content: str) -> Verses:
             chapter_and_verse = bold_element.get_text(strip=True)
             chapter_number, verse_number = chapter_and_verse.split(",")
             verse_text = bold_element.find_next_sibling(string=True)
-            verse_text = clean_text(verse_text)
+            # verse_text = clean_text(verse_text)
             verses.append(Verse(book_name, chapter_number, verse_number, verse_text))
 
     return verses
 
 
-def get_bible() -> Verses:
-    global BIBLE
-    if BIBLE is not None:
-        return BIBLE
+def get_bible(with_nikud: bool = False) -> Verses:
+    if with_nikud:
+        name = "books_nikud"
+    else:
+        name = "books_maleh"
 
-    verse = []
-    for file_name in get_all_html_files():
-        html = get_html(file_name)
-        book = get_book_from_html(html)
-        verse.extend(book)
-    BIBLE = verse
-    return verse
+    if name not in BIBLES:
+        verse = []
+        for file_name in get_all_html_files(name):
+            html = get_html(file_name)
+            book = get_book_from_html(html)
+            verse.extend(book)
+
+        BIBLES[name] = verse
+
+    return BIBLES[name]
 
 
+def get_bible_as_one_text(with_nikud: bool = False) -> str:
+    return '\n'.join([verse.text for verse in get_bible(with_nikud)])

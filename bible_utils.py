@@ -1,10 +1,10 @@
 from typing import Optional
 
 from bible_types import Verses
-from read_bible import BIBLE
+from read_bible import BIBLE_MALE
 
 
-def search_in_bible(quote: str, verses: Verses = BIBLE, expected: Optional[int] = None) -> Verses:
+def search_in_bible(quote: str, verses: Verses = BIBLE_MALE, expected: Optional[int] = None) -> Verses:
     """
     Search for a quote in the Bible and return the verses that contain it.
     """

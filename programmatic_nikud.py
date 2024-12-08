@@ -4,63 +4,83 @@ from typing import Optional, Iterable
 from read_bible import get_bible
 
 UNITS_MAP = {
-    'אחת': 1, 'אחד': 1,
-    'שתיים': 2, 'שתי': 2, 'שניים': 2, 'שני': 2,
-    'שלוש': 3, 'שלושה': 3,
-    'ארבע': 4, 'ארבעה': 4,
-    'חמש': 5, 'חמישה': 5,
-    'שש': 6, 'שישה': 6,
-    'שבע': 7, 'שבעה': 7,
-    'שמונה': 8,
-    'תשע': 9, 'תשעה': 9,
+    # Feminine
+    'אַחַת': 1,
+    'שְׁתַּיִם': 2,
+    'שָׁלוֹשׁ': 3,
+    'אַרְבַּע': 4,
+    'חָמֵשׁ': 5,
+    'שֵׁשׁ': 6,
+    'שֶׁבַע': 7,
+    'שְׁמוֹנֶה': 8,
+    'תֵּשַׁע': 9,
 
-    # Construct forms:
-    'שלושת': 3,
-    'ארבעת': 4,
-    'חמשת': 5,
-    'ששת': 6,
-    'שבעת': 7,
-    'שמונת': 8,
-    'תשעת': 9,
+    # Masculine
+    'אֶחָד': 1,
+    'שְׁנַיִם': 2,
+    'שְׁלוֹשָׁה': 3,
+    'אַרְבָּעָה': 4,
+    'חֲמִשָּׁה': 5,
+    'שִׁשָּׁה': 6,
+    'שִׁבְעָה': 7,
+    'שְׁמוֹנָה': 8,
+    'תִּשְׁעָה': 9,
 
-    # Conjunctive forms:
-    'שתים': 2,  # שתים עשרה
-    'שנים': 2,  # שנים עשר
+    # Construct
+    'שְׁתֵּי': 2,
+    'שְׁנֵי': 2,
+    'שְׁלוֹשֶׁת': 3,
+    'אַרְבַּעַת': 4,
+    'חֲמֵשֶׁת': 5,
+    'שֵׁשֶׁת': 6,
+    'שִׁבְעַת': 7,
+    'שְׁמוֹנַת': 8,
+    'תִּשְׁעַת': 9,
+
+    # Conjunctive
+    'שְׁתֵּים': 2,
+    'שְׁנֵים': 2,
 }
 
 TENS_MAP = {
-    'עשר': 10, 'עשרה': 10,
-    'עשרים': 20,
-    'שלושים': 30,
-    'ארבעים': 40,
-    'חמישים': 50,
-    'שישים': 60,
-    'שבעים': 70,
-    'שמונים': 80,
-    'תשעים': 90
+    # Feminine
+    'עֶשֶׂר': 10,
+
+    # Masculine
+    'עֲשָׂרָה': 10,
+
+    # Tens (neutral across genders)
+    'עֶשְׂרִים': 20,
+    'שְׁלוֹשִׁים': 30,
+    'אַרְבָּעִים': 40,
+    'חֲמִשִּׁים': 50,
+    'שִׁשִּׁים': 60,
+    'שִׁבְעִים': 70,
+    'שְׁמוֹנִים': 80,
+    'תִּשְׁעִים': 90,
 }
 
 UNITS_AND_TENS_MAP = UNITS_MAP | TENS_MAP
 
 HUNDREDS_MAP = {
-    'מאה': 100, 'מאת': 100,
-    'מאתיים': 200
+    'מֵאָה': 100, 'מְאַת': 100,
+    'מָאתַיִם': 200
 }
 
 THOUSANDS_MAP = {
-    'אלף': 1000,
-    'אלפיים': 2000
+    'אֶלֶף': 1000,
+    'אַלְפַּיִם': 2000
 }
 
 TENTHOUSANDS_MAP = {
-    'רבבה': 10000,
-    'ריבוא': 10000
+    'רְבָבָה': 10000,
+    'רִבּוֹא': 10000
 }
 
 PLURAL_MAP = {
-    'מאות': 100,
-    'אלפים': 1000,
-    'רבבות': 10000
+    'מֵאוֹת': 100,
+    'אֲלָפִים': 1000,
+    'רְבָבוֹת': 10000
 }
 
 ALL_PLURAL_MAP = PLURAL_MAP | TENTHOUSANDS_MAP | THOUSANDS_MAP
@@ -69,30 +89,53 @@ ALL_PLURAL_MAP = PLURAL_MAP | TENTHOUSANDS_MAP | THOUSANDS_MAP
 ALL_NUMBER_WORDS = set(UNITS_AND_TENS_MAP) | set(HUNDREDS_MAP) | set(ALL_PLURAL_MAP)
 
 
-SHANA_WORDS = {"שנה", "שנות", "חודש", "חודשים", "שנים"}
+SHANA_WORDS = {"שָׁנָה", "שָׁנוֹת", "חוֹדֶשׁ", "חוֹדְשִׁים", "שָׁנִים"}
 
 
 class ConjugateLetter(Enum):
-    """Conjugate letters for numbers."""
-    BET = 'ב'
-    VAV = 'ו'
-    HEY = 'ה'
-    MEM = 'מ'
-    LAMED = 'ל'
-    KAF = 'כ'
+    """Conjugate letters with their forms for numbers and grammar."""
+
+    # BET Forms
+    BET_SHEVA = 'בְּ'  # Default form: "in"
+    BET_CHIRIK = 'בִּ'  # Before definite nouns: "in the"
+    BET_PATACH = 'בַּ'  # Rare but used in specific cases (e.g., poetic forms)
+
+    # VAV Forms
+    VAV_SHEVA = 'וְ'  # Default form: "and"
+    VAV_SHURUK = 'וּ'  # Before labials (ב, מ, פ) or rounded vowels
+    VAV_CHIRIK = 'וִ'  # Before chirik-based vowels (e.g., "and Israel")
+    VAV_KAMATZ = 'וָ'  # Used in emphatic or poetic contexts
+
+    # HEY Forms
+    HEY_PATACH = 'הַ'  # Default form: "the"
+    HEY_KAMATZ = 'הָ'  # Before guttural letters (ע, א, ח, ה)
+    HEY_SEGOL = 'הֶ'  # Occasional usage, such as in "הֶחָכָם"
+
+    # MEM Forms
+    MEM_CHIRIK = 'מִ'  # Default form: "from"
+    MEM_SEGOL = 'מֶ'  # Before guttural letters (e.g., "from the city")
+    MEM_SHURUK = 'מוּ'  # Poetic or archaic usage
+
+    # LAMED Forms
+    LAMED_SHEVA = 'לְ'  # Default form: "to"
+    LAMED_CHIRIK = 'לִ'  # Before definite nouns: "to the"
+    LAMED_PATACH = 'לַ'  # Before composite sheva or specific contexts
+
+    # KAF Forms
+    KAF_SHEVA = 'כְּ'  # Default form: "like/as"
+    KAF_CHIRIK = 'כִּ'  # Before definite nouns: "like the"
+    KAF_PATACH = 'כַּ'  # Rare, poetic usage
 
 
 def preprocess_token(token: str, letters: Iterable[ConjugateLetter] = ConjugateLetter) -> tuple[str, Optional[ConjugateLetter]]:
     """Preprocess token to identify if it's a conjunction and remove leading 'ו'."""
     for letter in letters:
         if token.startswith(letter.value):
-            return token[1:], letter
+            return token[len(letter.value):], letter
     return token, None
 
 
 def tokenize(phrase: str) -> list[str]:
-    phrase = phrase.replace('שתים עשרה', 'שתים- עשרה')
-    phrase = phrase.replace('שנים עשר', 'שנים- עשר')
     return phrase.split()
 
 
@@ -138,13 +181,12 @@ def hebrew_num_to_int(phrase: str) -> int:
             conjugate_letter = None
         else:
             if total:
-                token, conjugate_letter = preprocess_token(token, [ConjugateLetter.VAV])
+                token, conjugate_letter = preprocess_token(token,
+                                                           [ConjugateLetter.VAV_SHEVA, ConjugateLetter.VAV_SHURUK])
             else:
                 token, conjugate_letter = preprocess_token(token)
 
-        if token in SHANA_WORDS \
-                or token == 'שני' and is_last and len(tokens) > 1 \
-            or token == 'שנים' and next_token != 'עשר':
+        if token in SHANA_WORDS:
             continue
 
         # Units or construct forms
@@ -196,7 +238,9 @@ def iter_hebrew_numbers(with_hatayot: bool = True):
     for unit in ALL_NUMBER_WORDS:
         yield unit
         # add ו
-        yield f"ו{unit}"
+        if with_hatayot:
+            yield ConjugateLetter.VAV_SHEVA.value + unit
+            yield ConjugateLetter.VAV_SHURUK.value + unit
 
 
 def is_word_in_hebrew_numbers(word: str) -> bool:
@@ -208,22 +252,23 @@ def is_numbers_in_verse(verse) -> bool:
 
 
 EXCEPTIONS = ['האחת']
-EXCEPTION_BECAUSE_OF_PREVIOUS_WORD = [
-    ('באר', 'שבע'),
-    ('קרית', 'ארבע'),
-    ("בגדי", "שש"),
-    ("ימי", "שני"),
-    ("תולעת", "שני"),
-    ("שני", "ושש"),
 
+EXCEPTION_BECAUSE_OF_PREVIOUS_WORD = [
+    ('בְּאֵר', 'שֶׁבַע'),
+    ('קִרְיַת', 'אַרְבַּע'),
+    ('בִּגְדֵי', 'שֵׁשׁ'),
+    ('יְמֵי', 'שֵׁנִי'),
+    ('תוֹלַעַת', 'שָׁנִי'),
+    ('שָׁנִי', 'וְשֵׁשׁ'),
 ]
+
 EXCEPTIONS_BECAUSE_OF_NEXT_WORD = [
-    ("שני", "חיי"),
-    ("שני", "חייך"),
-    ("שני", "חייו"),
+    ('שְׁנֵי', 'חַיֵי'),
+    ('שְׁנֵי', 'חַיֶּיךָ'),
+    ('שְׁנֵי', 'חַיָּיו'),
 ]
+
 UNALLOWED_PHRASES = [
-    "מאת", "השבע",
 ]
 
 
@@ -235,7 +280,7 @@ def extract_number_phrases(verse: str) -> list[str]:
 
     def terminate_phrase():
         if current_phrase:
-            joined_current_phrase = " ".join(current_phrase).replace('-', '')
+            joined_current_phrase = " ".join(current_phrase)
             if joined_current_phrase not in UNALLOWED_PHRASES:
                 phrases.append(joined_current_phrase)
             current_phrase.clear()
@@ -287,7 +332,7 @@ def extract_number_phrases(verse: str) -> list[str]:
 
 def get_verses_with_numbers():
     verses = []
-    for verse in get_bible():
+    for verse in get_bible(with_nikud=True):
         if is_numbers_in_verse(verse.text):
             verses.append(verse)
 
