@@ -1,3 +1,4 @@
+import re
 from pathlib import Path
 from typing import List
 
@@ -22,11 +23,14 @@ def get_html(file_name: str) -> str:
 
 def clean_text(s):
     s = s.strip()
-    for char in ['-', '\n', '\r', '\t', '־', '  ']:
-        s = s.replace(char, ' ')
-    # s = ''.join([c for c in s if 'א' <= c <= 'ת' or c in [' ', '{', '}']])
-    return s
+    # for char in ['-', '\n', '\r', '\t', '־', '  ']:
+    #     s = s.replace(char, ' ')
 
+    # include letter or hebrew vowels/nikud:
+    pattern = r'[\u05D0-\u05EA\u0590-\u05C7 {}]'
+    # Use re.findall to keep only the matched characters
+    cleaned_string = ''.join(re.findall(pattern, s))
+    return cleaned_string
 
 def get_book_from_html(html_content: str) -> Verses:
     soup = BeautifulSoup(html_content, "html.parser")
@@ -42,7 +46,7 @@ def get_book_from_html(html_content: str) -> Verses:
             chapter_and_verse = bold_element.get_text(strip=True)
             chapter_number, verse_number = chapter_and_verse.split(",")
             verse_text = bold_element.find_next_sibling(string=True)
-            # verse_text = clean_text(verse_text)
+            verse_text = clean_text(verse_text)
             verses.append(Verse(book_name, chapter_number, verse_number, verse_text))
 
     return verses

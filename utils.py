@@ -72,3 +72,7 @@ def find_all_start_indices(text, query):
             return
         yield start
         start += 1
+
+
+def remove_vowels(text: str) -> str:
+    return re.sub(r'[\u05B0-\u05C7]', '', text)

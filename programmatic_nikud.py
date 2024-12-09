@@ -1,7 +1,9 @@
+import re
 from enum import Enum
 from typing import Optional, Iterable
 
 from read_bible import get_bible
+from utils import remove_vowels
 
 UNITS_MAP = {
     # Feminine
@@ -11,9 +13,12 @@ UNITS_MAP = {
     'אַרְבַּע': 4,
     'חָמֵשׁ': 5,
     'שֵׁשׁ': 6,
+    'שֶׁשׁ': 6,  # Added shortened form
     'שֶׁבַע': 7,
     'שְׁמוֹנֶה': 8,
     'תֵּשַׁע': 9,
+    'תְשַׁע': 9,  # Added shortened form
+    'תְּשַׁע': 9,  # Added shortened form
 
     # Masculine
     'אֶחָד': 1,
@@ -48,6 +53,9 @@ TENS_MAP = {
 
     # Masculine
     'עֲשָׂרָה': 10,
+
+    # Construct
+    'עֶשְׂרֵה': 10,
 
     # Tens (neutral across genders)
     'עֶשְׂרִים': 20,
@@ -89,7 +97,7 @@ ALL_PLURAL_MAP = PLURAL_MAP | TENTHOUSANDS_MAP | THOUSANDS_MAP
 ALL_NUMBER_WORDS = set(UNITS_AND_TENS_MAP) | set(HUNDREDS_MAP) | set(ALL_PLURAL_MAP)
 
 
-SHANA_WORDS = {"שָׁנָה", "שָׁנוֹת", "חוֹדֶשׁ", "חוֹדְשִׁים", "שָׁנִים"}
+SHANA_WORDS = {"שָׁנָה", "שָׁנָה", "שָׁנוֹת", "חוֹדֶשׁ", "חוֹדְשִׁים", "שָׁנִים"}
 
 
 class ConjugateLetter(Enum):
@@ -135,8 +143,12 @@ def preprocess_token(token: str, letters: Iterable[ConjugateLetter] = ConjugateL
     return token, None
 
 
-def tokenize(phrase: str) -> list[str]:
-    return phrase.split()
+def tokenize(text: str) -> list[str]:
+    # Define a regex pattern to match Hebrew words with vowels
+    # \u0590-\u05FF covers Hebrew letters, \u05B0-\u05BC and \u05C1-\u05C2 cover Hebrew vowel signs and diacritics
+    pattern = r'[\u0590-\u05FF\u05B0-\u05BC\u05C1-\u05C2]+'
+    words = re.findall(pattern, text)
+    return words
 
 
 def hebrew_num_to_int(phrase: str) -> int:
@@ -269,6 +281,7 @@ EXCEPTIONS_BECAUSE_OF_NEXT_WORD = [
 ]
 
 UNALLOWED_PHRASES = [
+    'הָאַחַת',
 ]
 
 
