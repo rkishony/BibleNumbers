@@ -23,14 +23,16 @@ def get_html(file_name: str) -> str:
 
 def clean_text(s):
     s = s.strip()
-    # for char in ['-', '\n', '\r', '\t', '־', '  ']:
-    #     s = s.replace(char, ' ')
-
-    # include letter or hebrew vowels/nikud:
+    # Replace hyphens with spaces
+    s = s.replace('-', ' ')
+    # Include letters or Hebrew vowels/nikud
     pattern = r'[\u05D0-\u05EA\u0590-\u05C7 {}]'
     # Use re.findall to keep only the matched characters
     cleaned_string = ''.join(re.findall(pattern, s))
+    # Replace multiple spaces with a single space
+    cleaned_string = re.sub(r'\s+', ' ', cleaned_string)
     return cleaned_string
+
 
 def get_book_from_html(html_content: str) -> Verses:
     soup = BeautifulSoup(html_content, "html.parser")

@@ -1,4 +1,5 @@
 import re
+import unicodedata
 
 
 def search_nikud_text_for_non_nikud_query(text: str, query: str):
@@ -76,3 +77,9 @@ def find_all_start_indices(text, query):
 
 def remove_vowels(text: str) -> str:
     return re.sub(r'[\u05B0-\u05C7]', '', text)
+
+
+def normalize_vowels(text):
+    if isinstance(text, str):
+        return unicodedata.normalize('NFC', text)
+

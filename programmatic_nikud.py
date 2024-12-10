@@ -2,8 +2,10 @@ import re
 from enum import Enum
 from typing import Optional, Iterable
 
-from read_bible import get_bible
+from read_bible import get_bible, get_bible_as_one_text
 from utils import remove_vowels
+
+b = get_bible_as_one_text(with_nikud=True)
 
 UNITS_MAP = {
     # Feminine
@@ -15,7 +17,7 @@ UNITS_MAP = {
     'שֵׁשׁ': 6,
     'שֶׁשׁ': 6,  # Added shortened form
     'שֶׁבַע': 7,
-    'שְׁמוֹנֶה': 8,
+    'שְׁמֹנֶה': 8,
     'תֵּשַׁע': 9,
     'תְשַׁע': 9,  # Added shortened form
     'תְּשַׁע': 9,  # Added shortened form
@@ -25,8 +27,8 @@ UNITS_MAP = {
     'שְׁנַיִם': 2,
     'שְׁלוֹשָׁה': 3,
     'אַרְבָּעָה': 4,
-    'חֲמִשָּׁה': 5,
-    'שִׁשָּׁה': 6,
+    'חֲמִשָּׁה': 5,
+    'שִׁשָּׁה': 6,
     'שִׁבְעָה': 7,
     'שְׁמוֹנָה': 8,
     'תִּשְׁעָה': 9,
@@ -34,22 +36,27 @@ UNITS_MAP = {
     # Construct
     'שְׁתֵּי': 2,
     'שְׁנֵי': 2,
-    'שְׁלוֹשֶׁת': 3,
+    'שְׁלֹשֶׁת': 3,
     'אַרְבַּעַת': 4,
     'חֲמֵשֶׁת': 5,
     'שֵׁשֶׁת': 6,
     'שִׁבְעַת': 7,
     'שְׁמוֹנַת': 8,
-    'תִּשְׁעַת': 9,
+    'תִשְׁעַת': 9,
 
     # Conjunctive
     'שְׁתֵּים': 2,
     'שְׁנֵים': 2,
+    'שְׁלֹשׁ': 3,
+    'אַרְבָּע': 4,
+    'שְׁבַע': 7,
+    'שְׁמוֹנֶה': 8,
 }
 
 TENS_MAP = {
     # Feminine
     'עֶשֶׂר': 10,
+    'עָשָׂר': 10,
 
     # Masculine
     'עֲשָׂרָה': 10,
@@ -61,11 +68,12 @@ TENS_MAP = {
     'עֶשְׂרִים': 20,
     'שְׁלוֹשִׁים': 30,
     'אַרְבָּעִים': 40,
-    'חֲמִשִּׁים': 50,
-    'שִׁשִּׁים': 60,
+    'חֲמִשִּׁים': 50,
+    'שִׁשִּׁים': 60,
     'שִׁבְעִים': 70,
+    'שְׁמֹנִים': 80,
     'שְׁמוֹנִים': 80,
-    'תִּשְׁעִים': 90,
+    'תִשְׁעִים': 90,
 }
 
 UNITS_AND_TENS_MAP = UNITS_MAP | TENS_MAP
@@ -88,6 +96,7 @@ TENTHOUSANDS_MAP = {
 PLURAL_MAP = {
     'מֵאוֹת': 100,
     'אֲלָפִים': 1000,
+    'אַלְפֵי': 1000,
     'רְבָבוֹת': 10000
 }
 
@@ -97,7 +106,7 @@ ALL_PLURAL_MAP = PLURAL_MAP | TENTHOUSANDS_MAP | THOUSANDS_MAP
 ALL_NUMBER_WORDS = set(UNITS_AND_TENS_MAP) | set(HUNDREDS_MAP) | set(ALL_PLURAL_MAP)
 
 
-SHANA_WORDS = {"שָׁנָה", "שָׁנָה", "שָׁנוֹת", "חוֹדֶשׁ", "חוֹדְשִׁים", "שָׁנִים"}
+SHANA_WORDS = {"שָׁנָה", "שָׁנָה", "שְׁנוֹת", "חֹדֶשׁ", "חֳדָשִׁים", "שָׁנִים", "שְׁנֵי"}
 
 
 class ConjugateLetter(Enum):
@@ -113,6 +122,7 @@ class ConjugateLetter(Enum):
     VAV_SHURUK = 'וּ'  # Before labials (ב, מ, פ) or rounded vowels
     VAV_CHIRIK = 'וִ'  # Before chirik-based vowels (e.g., "and Israel")
     VAV_KAMATZ = 'וָ'  # Used in emphatic or poetic contexts
+    VAV_PATAH = 'וַ'
 
     # HEY Forms
     HEY_PATACH = 'הַ'  # Default form: "the"
@@ -266,7 +276,7 @@ def is_numbers_in_verse(verse) -> bool:
 EXCEPTIONS = ['האחת']
 
 EXCEPTION_BECAUSE_OF_PREVIOUS_WORD = [
-    ('בְּאֵר', 'שֶׁבַע'),
+    ('בְּאֵר', 'שֶׁבַע'),
     ('קִרְיַת', 'אַרְבַּע'),
     ('בִּגְדֵי', 'שֵׁשׁ'),
     ('יְמֵי', 'שֵׁנִי'),
@@ -275,9 +285,9 @@ EXCEPTION_BECAUSE_OF_PREVIOUS_WORD = [
 ]
 
 EXCEPTIONS_BECAUSE_OF_NEXT_WORD = [
-    ('שְׁנֵי', 'חַיֵי'),
-    ('שְׁנֵי', 'חַיֶּיךָ'),
-    ('שְׁנֵי', 'חַיָּיו'),
+    ('שְׁנֵי', 'חַיֵּי'),
+    ('שְׁנֵי', 'חַיֶּיךָ'),
+    ('שְׁנֵי', 'חַיָּיו'),
 ]
 
 UNALLOWED_PHRASES = [
