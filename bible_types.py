@@ -1,3 +1,4 @@
+from __future__ import annotations
 from dataclasses import dataclass
 from typing import NamedTuple, List, Dict, Union, Tuple
 
@@ -25,7 +26,7 @@ class NumericHebrew(BaseModel):
     chapter: str
     letter: str
     quote: str
-    number: Union[int, float]
+    number: Union[int, float, Time]
     entity: str
 
     def to_string(self):
@@ -151,3 +152,48 @@ class VerseAndNumericHebrews:
         location_html = f"{self.verse.book} {self.verse.chapter} {self.verse.letter}"
 
         return verse_html, location_html
+
+
+@dataclass
+class Time:
+    years: int = 0
+    months: int = 0
+    days: int = 0
+
+    def __str__(self):
+        s = ""
+        if self.years:
+            s += f"{self.years}שנה "
+        if self.months:
+            s += f", {self.months}חודשים "
+        if self.days:
+            s += f", {self.days}ימים "
+        return s
+
+    def _convert_to_time_if_zero(self, other):
+        if other == 0:
+            return Time()
+        return other
+
+    def __add__(self, other):
+        other = self._convert_to_time_if_zero(other)
+        try:
+            return Time(self.years + other.years, self.months + other.months, self.days + other.days)
+        except:
+            2 + 2
+
+    def __sub__(self, other):
+        other = self._convert_to_time_if_zero(other)
+        return Time(self.years - other.years, self.months - other.months, self.days - other.days)
+
+    def __mul__(self, other):
+        return Time(self.years * other, self.months * other, self.days * other)
+
+    # reverse operation
+    __radd__ = __add__
+    __rmul__ = __mul__
+
+    def __eq__(self, other):
+        other = self._convert_to_time_if_zero(other)
+        return self.years == other.years and self.months == other.months and self.days == other.days
+

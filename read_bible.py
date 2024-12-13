@@ -61,16 +61,16 @@ def get_bible(with_nikud: bool = False, remove_punctuations: bool = True) -> Ver
     else:
         name = "books_maleh"
 
-    if name not in BIBLES:
+    if (name, remove_punctuations) not in BIBLES:
         verse = []
         for file_name in get_all_html_files(name):
             html = get_html(file_name)
             book = get_book_from_html(html, remove_punctuations)
             verse.extend(book)
 
-        BIBLES[name] = verse
+        BIBLES[(name, remove_punctuations)] = verse
 
-    return BIBLES[name]
+    return BIBLES[(name, remove_punctuations)]
 
 
 def get_bible_as_one_text(with_nikud: bool = False) -> str:
