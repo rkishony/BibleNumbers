@@ -25,7 +25,7 @@ class NumericHebrew(BaseModel):
     chapter: str
     letter: str
     quote: str
-    number: int
+    number: Union[int, float]
     entity: str
 
     def to_string(self):

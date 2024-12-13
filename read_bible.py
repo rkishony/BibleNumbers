@@ -34,7 +34,7 @@ def clean_text(s):
     return cleaned_string
 
 
-def get_book_from_html(html_content: str) -> Verses:
+def get_book_from_html(html_content: str, remove_punctuations: bool = True) -> Verses:
     soup = BeautifulSoup(html_content, "html.parser")
     book_name = soup.find("h1").get_text(strip=True)
     if book_name == "תורה נביאים וכתובים":
@@ -48,13 +48,14 @@ def get_book_from_html(html_content: str) -> Verses:
             chapter_and_verse = bold_element.get_text(strip=True)
             chapter_number, verse_number = chapter_and_verse.split(",")
             verse_text = bold_element.find_next_sibling(string=True)
-            verse_text = clean_text(verse_text)
+            if remove_punctuations:
+                verse_text = clean_text(verse_text)
             verses.append(Verse(book_name, chapter_number, verse_number, verse_text))
 
     return verses
 
 
-def get_bible(with_nikud: bool = False) -> Verses:
+def get_bible(with_nikud: bool = False, remove_punctuations: bool = True) -> Verses:
     if with_nikud:
         name = "books_nikud"
     else:
@@ -64,7 +65,7 @@ def get_bible(with_nikud: bool = False) -> Verses:
         verse = []
         for file_name in get_all_html_files(name):
             html = get_html(file_name)
-            book = get_book_from_html(html)
+            book = get_book_from_html(html, remove_punctuations)
             verse.extend(book)
 
         BIBLES[name] = verse
@@ -74,3 +75,12 @@ def get_bible(with_nikud: bool = False) -> Verses:
 
 def get_bible_as_one_text(with_nikud: bool = False) -> str:
     return '\n'.join([verse.text for verse in get_bible(with_nikud)])
+
+def find_all_verses_containing(phrase: str, with_nikud: bool = False, remove_punctuations: bool = True) -> List[Verse]:
+    verses = get_bible(with_nikud, remove_punctuations)
+    return [verse for verse in verses if phrase in verse.text]
+
+
+s = "שְׁנֵים"
+for v in find_all_verses_containing(s, with_nikud=True, remove_punctuations=False):
+    print(v.text)

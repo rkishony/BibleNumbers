@@ -1,13 +1,17 @@
-str1 = 'שִׁשִּׁים'  # Chirik first, then Dagesh
-str2 = 'שִׁשִּׁים'  # Dagesh first, then Chirik
+import re
 
-print(str1 == str2)  # False, because the order of marks differs
 
-import unicodedata
 
-# Normalize both strings
-str1_normalized = unicodedata.normalize('NFC', str1)
-str2_normalized = unicodedata.normalize('NFC', str2)
+# Example usage
+s = "הוּא וַאֲנָשִׁים--מִיהוּדָה"
+tokens = tokenize(s)
+reconstructed = reconstruct(tokens)
 
-print(str1 == str1_normalized)  # True, after normalization
-print(str2 == str2_normalized)  # True, after normalization
+# Separate into words and separators for display
+words = [part for t, part in tokens if t == "word"]
+separators = [part for t, part in tokens if t == "separator"]
+
+print("Tokens:", tokens)
+print("Words:", words)
+print("Separators:", separators)
+print("Reconstructed:", reconstructed)

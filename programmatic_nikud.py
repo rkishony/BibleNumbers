@@ -2,18 +2,18 @@ import re
 from enum import Enum
 from typing import Optional, Iterable
 
-from read_bible import get_bible, get_bible_as_one_text
-from utils import remove_vowels
+from read_bible import get_bible
 
-b = get_bible_as_one_text(with_nikud=True)
 
 UNITS_MAP = {
     # Feminine
     'אַחַת': 1,
     'שְׁתַּיִם': 2,
     'שָׁלוֹשׁ': 3,
+    'שָׁלֹשׁ': 3,  # Added shortened form
     'אַרְבַּע': 4,
     'חָמֵשׁ': 5,
+    'חֲמֵשׁ': 5,
     'שֵׁשׁ': 6,
     'שֶׁשׁ': 6,  # Added shortened form
     'שֶׁבַע': 7,
@@ -25,17 +25,20 @@ UNITS_MAP = {
     # Masculine
     'אֶחָד': 1,
     'שְׁנַיִם': 2,
+    'שְׁלֹשָׁה': 3,
     'שְׁלוֹשָׁה': 3,
     'אַרְבָּעָה': 4,
     'חֲמִשָּׁה': 5,
     'שִׁשָּׁה': 6,
     'שִׁבְעָה': 7,
     'שְׁמוֹנָה': 8,
+    'שְׁמֹנָה': 8,
     'תִּשְׁעָה': 9,
 
     # Construct
     'שְׁתֵּי': 2,
     'שְׁנֵי': 2,
+
     'שְׁלֹשֶׁת': 3,
     'אַרְבַּעַת': 4,
     'חֲמֵשֶׁת': 5,
@@ -58,6 +61,8 @@ TENS_MAP = {
     'עֶשֶׂר': 10,
     'עָשָׂר': 10,
 
+    'עֲשֶׂרֶת': 10,
+
     # Masculine
     'עֲשָׂרָה': 10,
 
@@ -67,6 +72,7 @@ TENS_MAP = {
     # Tens (neutral across genders)
     'עֶשְׂרִים': 20,
     'שְׁלוֹשִׁים': 30,
+    'שְׁלֹשִׁים': 30,
     'אַרְבָּעִים': 40,
     'חֲמִשִּׁים': 50,
     'שִׁשִּׁים': 60,
@@ -74,18 +80,21 @@ TENS_MAP = {
     'שְׁמֹנִים': 80,
     'שְׁמוֹנִים': 80,
     'תִשְׁעִים': 90,
+
+    'מָאתַיִם': 200,
+    'אַלְפַּיִם': 2000,
 }
 
 UNITS_AND_TENS_MAP = UNITS_MAP | TENS_MAP
 
 HUNDREDS_MAP = {
-    'מֵאָה': 100, 'מְאַת': 100,
-    'מָאתַיִם': 200
+    'מֵאָה': 100,
+    'מְאַת': 100,
 }
 
 THOUSANDS_MAP = {
     'אֶלֶף': 1000,
-    'אַלְפַּיִם': 2000
+    'אָלֶף': 1000,
 }
 
 TENTHOUSANDS_MAP = {
@@ -106,50 +115,30 @@ ALL_PLURAL_MAP = PLURAL_MAP | TENTHOUSANDS_MAP | THOUSANDS_MAP
 ALL_NUMBER_WORDS = set(UNITS_AND_TENS_MAP) | set(HUNDREDS_MAP) | set(ALL_PLURAL_MAP)
 
 
-SHANA_WORDS = {"שָׁנָה", "שָׁנָה", "שְׁנוֹת", "חֹדֶשׁ", "חֳדָשִׁים", "שָׁנִים", "שְׁנֵי"}
-
+SHANA_WORDS = {"שָׁנָה", "שָׁנָה", "שְׁנוֹת", "שָׁנִים", "שְׁנֵי"}
+MONTH_WORDS = {"לַחֹדֶשׁ", "לְחֹדֶשׁ", "חֹדֶשׁ", "חֳדָשִׁים"}
+DAY_WORDS = {'יָמִים'}
+TIME_WORDS = SHANA_WORDS | MONTH_WORDS | DAY_WORDS
 
 class ConjugateLetter(Enum):
     """Conjugate letters with their forms for numbers and grammar."""
-
-    # BET Forms
-    BET_SHEVA = 'בְּ'  # Default form: "in"
-    BET_CHIRIK = 'בִּ'  # Before definite nouns: "in the"
-    BET_PATACH = 'בַּ'  # Rare but used in specific cases (e.g., poetic forms)
-
-    # VAV Forms
-    VAV_SHEVA = 'וְ'  # Default form: "and"
-    VAV_SHURUK = 'וּ'  # Before labials (ב, מ, פ) or rounded vowels
-    VAV_CHIRIK = 'וִ'  # Before chirik-based vowels (e.g., "and Israel")
-    VAV_KAMATZ = 'וָ'  # Used in emphatic or poetic contexts
-    VAV_PATAH = 'וַ'
-
-    # HEY Forms
-    HEY_PATACH = 'הַ'  # Default form: "the"
-    HEY_KAMATZ = 'הָ'  # Before guttural letters (ע, א, ח, ה)
-    HEY_SEGOL = 'הֶ'  # Occasional usage, such as in "הֶחָכָם"
-
-    # MEM Forms
-    MEM_CHIRIK = 'מִ'  # Default form: "from"
-    MEM_SEGOL = 'מֶ'  # Before guttural letters (e.g., "from the city")
-    MEM_SHURUK = 'מוּ'  # Poetic or archaic usage
-
-    # LAMED Forms
-    LAMED_SHEVA = 'לְ'  # Default form: "to"
-    LAMED_CHIRIK = 'לִ'  # Before definite nouns: "to the"
-    LAMED_PATACH = 'לַ'  # Before composite sheva or specific contexts
-
-    # KAF Forms
-    KAF_SHEVA = 'כְּ'  # Default form: "like/as"
-    KAF_CHIRIK = 'כִּ'  # Before definite nouns: "like the"
-    KAF_PATACH = 'כַּ'  # Rare, poetic usage
+    BET = 'ב'
+    VAV = 'ו'
+    HEY = 'ה'
+    MEM = 'מ'
+    LAMED = 'ל'
+    KAF = 'כ'
 
 
 def preprocess_token(token: str, letters: Iterable[ConjugateLetter] = ConjugateLetter) -> tuple[str, Optional[ConjugateLetter]]:
     """Preprocess token to identify if it's a conjunction and remove leading 'ו'."""
     for letter in letters:
         if token.startswith(letter.value):
-            return token[len(letter.value):], letter
+            nikud_pattern = "[\u0590-\u05C7]*"  # Matches Hebrew vowel signs and diacritics
+            pattern = f"^{letter.value}{nikud_pattern}"  # Match the conjugate letter and Nikud at the start only
+            # Remove only the leading conjugate letter with Nikud
+            result = re.sub(pattern, "", token)
+            return result, letter
     return token, None
 
 
@@ -195,6 +184,18 @@ def hebrew_num_to_int(phrase: str) -> int:
             current_segment = current_segment - last + new_val
             segment_parts.append(new_val)
 
+    def multiply_all_thus_far(factor):
+        nonlocal current_segment, segment_parts, total
+        # add up all parts and multiply by factor
+        sum_thus_far = sum(segment_parts)
+        if sum_thus_far == 0 and factor > 1:
+            sum_thus_far = max(1, total)
+            total = sum_thus_far * factor
+        else:
+            total += sum_thus_far * factor
+        segment_parts = []
+        current_segment = 0
+
     for j, token in enumerate(tokens):
         is_last = j + 1 == len(tokens)
         is_first = j == 0
@@ -202,13 +203,18 @@ def hebrew_num_to_int(phrase: str) -> int:
         if token in ALL_NUMBER_WORDS:
             conjugate_letter = None
         else:
-            if total:
-                token, conjugate_letter = preprocess_token(token,
-                                                           [ConjugateLetter.VAV_SHEVA, ConjugateLetter.VAV_SHURUK])
-            else:
+            if is_first:
                 token, conjugate_letter = preprocess_token(token)
+            else:
+                token, conjugate_letter = preprocess_token(token, [ConjugateLetter.VAV])
 
-        if token in SHANA_WORDS:
+        if token not in ALL_NUMBER_WORDS and token not in TIME_WORDS:
+            print(f"Token not recognized as number: {token}")
+
+        if token in TIME_WORDS and not (token == 'שְׁנֵי' and len(segment_parts) == 0):
+            if token in MONTH_WORDS and any(t in SHANA_WORDS for t in tokens):
+                multiply_all_thus_far(1/12)
+            multiply_all_thus_far(1)
             continue
 
         # Units or construct forms
@@ -246,7 +252,7 @@ def hebrew_num_to_int(phrase: str) -> int:
                 current_segment += value
                 segment_parts.append(value)
             else:
-                multiply_last(value)
+                multiply_all_thus_far(value)
             continue
 
         # token not recognized as number, we can continue or raise an error
@@ -259,14 +265,10 @@ def hebrew_num_to_int(phrase: str) -> int:
 def iter_hebrew_numbers(with_hatayot: bool = True):
     for unit in ALL_NUMBER_WORDS:
         yield unit
-        # add ו
-        if with_hatayot:
-            yield ConjugateLetter.VAV_SHEVA.value + unit
-            yield ConjugateLetter.VAV_SHURUK.value + unit
 
 
 def is_word_in_hebrew_numbers(word: str) -> bool:
-    return word in iter_hebrew_numbers()
+    return word in iter_hebrew_numbers() or preprocess_token(word)[0] in iter_hebrew_numbers()
 
 
 def is_numbers_in_verse(verse) -> bool:
@@ -285,13 +287,15 @@ EXCEPTION_BECAUSE_OF_PREVIOUS_WORD = [
 ]
 
 EXCEPTIONS_BECAUSE_OF_NEXT_WORD = [
+    ('שְׁנֵי', 'חַיַּי'),
     ('שְׁנֵי', 'חַיֵּי'),
-    ('שְׁנֵי', 'חַיֶּיךָ'),
-    ('שְׁנֵי', 'חַיָּיו'),
+    ('שְׁנֵי', 'חַיֶּיךָ'),
+    ('שְׁנֵי', 'חַיָּיו'),
+    ('שְׁנֵי', 'מְגוּרַי')
 ]
 
-UNALLOWED_PHRASES = [
-    'הָאַחַת',
+THE_ONE = [
+    'אַחַת', 'אֶחָד'
 ]
 
 
@@ -304,8 +308,7 @@ def extract_number_phrases(verse: str) -> list[str]:
     def terminate_phrase():
         if current_phrase:
             joined_current_phrase = " ".join(current_phrase)
-            if joined_current_phrase not in UNALLOWED_PHRASES:
-                phrases.append(joined_current_phrase)
+            phrases.append(joined_current_phrase)
             current_phrase.clear()
 
     prev_raw_token, prev_token = None, None
@@ -319,12 +322,20 @@ def extract_number_phrases(verse: str) -> list[str]:
 
         next_token = tokens[i + 1] if i + 1 < len(tokens) else None
         # Check if token is a number word or in the ignore words
+        if conjugate_letter not in [None, ConjugateLetter.VAV] and current_phrase:
+            terminate_phrase()
+
         if raw_token in EXCEPTIONS:
             terminate_phrase()
+        if token in THE_ONE and len(current_phrase) == 0:
+            continue
         elif (prev_token, raw_token) in EXCEPTION_BECAUSE_OF_PREVIOUS_WORD \
                 or (prev_raw_token, raw_token) in EXCEPTION_BECAUSE_OF_PREVIOUS_WORD:
             terminate_phrase()
         elif (raw_token, next_token) in EXCEPTIONS_BECAUSE_OF_NEXT_WORD:
+            terminate_phrase()
+        elif token == "אַחַת" and len(current_phrase) == 0 and next_token != "עֶשְׂרֵה":
+            current_phrase.append(raw_token)
             terminate_phrase()
         elif token in ALL_NUMBER_WORDS or raw_token in ALL_NUMBER_WORDS:
             # if conjugate_letter in {ConjugateLetter.BET, ConjugateLetter.HEY}:
@@ -334,13 +345,13 @@ def extract_number_phrases(verse: str) -> list[str]:
                 terminate_phrase()
             # Start or continue a phrase
             current_phrase.append(raw_token)
-        elif token in SHANA_WORDS and current_phrase:
+        elif token in TIME_WORDS and current_phrase:
             # If 'שנה' appears we include it
             current_phrase.append(raw_token)
 
             # Look ahead to check if another 'שנה' exists at the end of this phrase
             look_ahead_tokens = tokens[i + 1:]
-            has_following_shana = any(preprocess_token(t)[0] in SHANA_WORDS for t in look_ahead_tokens)
+            has_following_shana = any(preprocess_token(t)[0] in TIME_WORDS for t in look_ahead_tokens)
             if not has_following_shana:
                 terminate_phrase()
         else:
