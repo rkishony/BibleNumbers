@@ -8,15 +8,19 @@ from verses_to_matches import dump_verses_to_numerics
 
 def extract_numeric_hebrews(verse) -> List[NumericHebrew]:
     number_phrases = extract_number_phrases(verse.text)
-
-    return [NumericHebrew(
-                book=verse.book,
-                chapter=verse.chapter,
-                letter=verse.letter,
-                quote=phrase,
-                number=hebrew_num_to_int(phrase),
-                entity=''
-    ) for phrase in number_phrases]
+    numeric_hebrews = []
+    for phrase in number_phrases:
+        number = hebrew_num_to_int(phrase)
+        print(phrase, number)
+        numeric_hebrews.append(NumericHebrew(
+            book=verse.book,
+            chapter=verse.chapter,
+            letter=verse.letter,
+            quote=phrase,
+            number=number,
+            entity=''
+        ))
+    return numeric_hebrews
 
 
 def main():
@@ -26,7 +30,7 @@ def main():
         numeric_hebrews = extract_numeric_hebrews(verse)
         verses_to_matches[verse] = numeric_hebrews
 
-    dump_verses_to_numerics('verses_to_numerics_p.json', verses_to_matches)
+    # dump_verses_to_numerics('verses_to_numerics_p.json', verses_to_matches)
 
     verses_and_numeric_hebrews = []
     for verse, numeric_hebrews in verses_to_matches.items():

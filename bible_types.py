@@ -2,6 +2,7 @@ from __future__ import annotations
 from dataclasses import dataclass
 from typing import NamedTuple, List, Dict, Union, Tuple
 
+import operator
 import numpy as np
 from pydantic import BaseModel
 
@@ -156,44 +157,87 @@ class VerseAndNumericHebrews:
 
 @dataclass
 class Time:
-    years: int = 0
-    months: int = 0
-    days: int = 0
+    years: int = None
+    months: int = None
+    days: int = None
+    is_date: bool = False
 
     def __str__(self):
-        s = ""
+        if self.is_date:
+            if self._is_day_only():
+                return f"{self.days} יום לחודש"
+            if self._is_month_only():
+                return f"{self.months} חודש לשנה"
+            if self._is_year_only():
+                return f"{self.years} שנים ל-"
+            raise ValueError("Invalid date")
+        texts = []
         if self.years:
-            s += f"{self.years}שנה "
+            texts.append(f"{self.years} שנה")
         if self.months:
-            s += f", {self.months}חודשים "
+            texts.append(f"{self.months} חודש")
         if self.days:
-            s += f", {self.days}ימים "
-        return s
+            texts.append(f"{self.days} יום")
+        return " ".join(texts)
 
-    def _convert_to_time_if_zero(self, other):
+    def _is_year_only(self):
+        return self.years is not None and self.months is None and self.days is None
+
+    def _is_month_only(self):
+        return self.months is not None and self.years is None and self.days is None
+
+    def _is_day_only(self):
+        return self.days is not None and self.years is None and self.months is None
+
+    def _convert_to_time(self, other):
+
+        if isinstance(other, Time):
+            return other
         if other == 0:
-            return Time()
-        return other
+            return Time(None if self.years is None else 0,
+                        None if self.months is None else 0,
+                        None if self.days is None else 0,
+                        self.is_date)
+        if self._is_day_only():
+            return Time(days=other)
+        if self._is_month_only():
+            return Time(months=other)
+        if self._is_year_only():
+            return Time(years=other)
+        raise ValueError("Invalid date")
+
+    @staticmethod
+    def _apply_operation_or_none(a, b, operation):
+        if a is None and b is None:
+            return None
+        return operation(a or 0, b or 0)
+
+    def _apply_operation(self, other, operation):
+        other = self._convert_to_time(other)
+        return Time(
+            self._apply_operation_or_none(self.years, other.years, operation),
+            self._apply_operation_or_none(self.months, other.months, operation),
+            self._apply_operation_or_none(self.days, other.days, operation),
+            self.is_date or other.is_date
+        )
 
     def __add__(self, other):
-        other = self._convert_to_time_if_zero(other)
-        try:
-            return Time(self.years + other.years, self.months + other.months, self.days + other.days)
-        except:
-            2 + 2
+        return self._apply_operation(other, operator.add)
 
     def __sub__(self, other):
-        other = self._convert_to_time_if_zero(other)
-        return Time(self.years - other.years, self.months - other.months, self.days - other.days)
+        return self._apply_operation(other, operator.sub)
 
     def __mul__(self, other):
-        return Time(self.years * other, self.months * other, self.days * other)
+        return Time(self.years * other if self.years is not None else None,
+                    self.months * other if self.months is not None else None,
+                    self.days * other if self.days is not None else None,
+                    self.is_date)
 
     # reverse operation
     __radd__ = __add__
     __rmul__ = __mul__
 
     def __eq__(self, other):
-        other = self._convert_to_time_if_zero(other)
-        return self.years == other.years and self.months == other.months and self.days == other.days
+        other = self._convert_to_time(other)
+        return self.years == other.years and self.months == other.months and self.days == other.days and self.is_date == other.is_date
 

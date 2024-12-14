@@ -21,6 +21,7 @@ UNITS_MAP = {
     'שֶׁבַע': 7,
     'שְׁמֹנֶה': 8,
     'תֵּשַׁע': 9,
+    'תֵשַׁע': 9,
     'תְשַׁע': 9,  # Added shortened form
     'תְּשַׁע': 9,  # Added shortened form
 
@@ -34,6 +35,7 @@ UNITS_MAP = {
     'חֲמִשָּׁה': 5,
     'שִׁשָּׁה': 6,
     'שִׁבְעָה': 7,
+    'שִׁבְעָנָה': 7,
     'שְׁמוֹנָה': 8,
     'שְׁמֹנָה': 8,
     'תִּשְׁעָה': 9,
@@ -51,8 +53,10 @@ UNITS_MAP = {
     'תִשְׁעַת': 9,
 
     # Conjunctive
+    'עַשְׁתֵּי': 1,
     'שְׁתֵּים': 2,
     'שְׁנֵים': 2,
+    'שְּׁנֵים': 2,
     'שְׁלֹשׁ': 3,
     'אַרְבָּע': 4,
     'שְׁבַע': 7,
@@ -119,6 +123,7 @@ PLURAL_MAP = {
     'אַלְפֵי': 1000,
     'רְבָבוֹת': 10000,
     'רִבְבוֹת': 10000,
+    'שָׁבֻעִים': 7,
 }
 
 ALL_PLURAL_MAP = PLURAL_MAP | TENTHOUSANDS_MAP | THOUSANDS_MAP | HUNDREDS_PLURAL_MAP
@@ -129,10 +134,11 @@ ALL_NUMBER_WORDS = set(FIXED_MAP) | set(HUNDREDS_MAP) | set(ALL_PLURAL_MAP)
 
 
 SHANA_WORDS = {"שָׁנָה", "שָׁנָה", "שְׁנוֹת", "שָׁנִים", "שְׁנֵי"}
-MONTH_WORDS = {"לַחֹדֶשׁ", "לְחֹדֶשׁ", "חֹדֶשׁ", "חֳדָשִׁים"}
-DAY_WORDS = {'יָמִים', 'יוֹם'}
-NIGHT_WORDS = {'לַיְלָה', 'לֵיל'}
-TIME_WORDS = SHANA_WORDS | MONTH_WORDS | DAY_WORDS | NIGHT_WORDS
+SHANA_STARTER = {"בַּשָׁנָה", "בַשָּׁנָה", "בִּשְׁנַת"}
+MONTH_WORDS = {"לַחֹדֶשׁ", "לְחֹדֶשׁ", "חֹדֶשׁ", "חֳדָשִׁים", "בַחֹדֶשׁ"}
+DAY_WORDS = {'יָמִים', 'יוֹם', 'הַיָּמִים'}
+NIGHT_WORDS = {'לַיְלָה', 'לֵיל', 'לֵילוֹת'}
+TIME_WORDS = SHANA_WORDS | MONTH_WORDS | DAY_WORDS | NIGHT_WORDS | SHANA_STARTER
 
 
 EXCEPTIONS = ['האחת']
@@ -141,7 +147,9 @@ EXCEPTION_BECAUSE_OF_PREVIOUS_WORD = [
     ('בְּאֵר', 'שֶׁבַע'),
     ('בְאֵר', 'שֶׁבַע'),
     ('קִרְיַת', 'אַרְבַּע'),
+    ('קִרְיַת', 'אַרְבַּע'),
     ('קִרְיַת', 'הָאַרְבַּע'),
+    ('בַּת', 'שֶׁבַע'),
     ('בִּגְדֵי', 'שֵׁשׁ'),
     ('יְמֵי', 'שֵׁנִי'),
     ('תוֹלַעַת', 'שָׁנִי'),
@@ -153,7 +161,8 @@ EXCEPTIONS_BECAUSE_OF_NEXT_WORD = [
     ('שְׁנֵי', 'חַיֵּי'),
     ('שְׁנֵי', 'חַיֶּיךָ'),
     ('שְׁנֵי', 'חַיָּיו'),
-    ('שְׁנֵי', 'מְגוּרַי')
+    ('שְׁנֵי', 'מְגוּרַי'),
+    ('שֶׁבַע', 'בֶּן'),  #  שֶׁבַע בֶּן בכרי
 ]
 
 THE_ONE = [
@@ -243,39 +252,45 @@ def hebrew_num_to_int(phrase: str) -> int:
         nonlocal current_segment, segment_parts, total
         # add up all parts and multiply by factor
         sum_thus_far = sum(segment_parts)
-        if isinstance(sum_thus_far, Time) or isinstance(factor, Time):
-            total += sum_thus_far * factor
-        elif sum_thus_far == 0 and factor > 1:
-            sum_thus_far = max(1, total)
+        if sum_thus_far == 0:
+            if isinstance(total, Time):
+                sum_thus_far = total
+            else:
+                sum_thus_far = max(1, total)
             total = sum_thus_far * factor
         else:
             total += sum_thus_far * factor
         segment_parts = []
         current_segment = 0
 
-    for j, token in enumerate(tokens):
+    for j, raw_token in enumerate(tokens):
         is_last = j + 1 == len(tokens)
         is_first = j == 0
         next_token = tokens[j + 1] if not is_last else None
-        if is_first:
-            token, conjugate_letters = preprocess_token(token, expected_nouns=ALL_WORDS)
-        else:
-            token, conjugate_letters = preprocess_token(token, [ConjugateLetter.VAV], expected_nouns=ALL_WORDS)
+        token, conjugate_letters = preprocess_token(raw_token, expected_nouns=ALL_WORDS)
 
         if token not in ALL_NUMBER_WORDS and token not in TIME_WORDS:
             print(f"Token not recognized as number: {token}")
 
+        if is_first and token in SHANA_STARTER:
+            total = Time(0, is_date=True)
+            continue
         if token in SHANA_WORDS and not (token == 'שְׁנֵי' and len(segment_parts) == 0):
             multiply_all_thus_far(Time(1))
             continue
+        if raw_token in ["לַחֹדֶשׁ", "לְחֹדֶשׁ", "בַחֹדֶשׁ"]:
+            if not isinstance(total, Time):
+                multiply_all_thus_far(Time(days=1))
+            total.is_date = True
+            continue
         if token in MONTH_WORDS:
-            multiply_all_thus_far(Time(0, 1))
+            multiply_all_thus_far(Time(months=1))
             continue
         if token in DAY_WORDS:
-            multiply_all_thus_far(Time(0, 0, 1))
+            multiply_all_thus_far(Time(days=1))
             continue
         if token in NIGHT_WORDS:
-            multiply_all_thus_far(Time(0, 0, 0))
+            multiply_all_thus_far(Time(days=0))
             continue
 
         # Units or construct forms
@@ -304,9 +319,7 @@ def hebrew_num_to_int(phrase: str) -> int:
 
         # token not recognized as number, we can continue or raise an error
         continue
-
     total += current_segment
-    print(f"Total: {total}")
     return total
 
 
@@ -334,19 +347,25 @@ def extract_number_phrases(verse: str) -> list[str]:
 
     def terminate_phrase():
         if current_phrase:
-            joined_current_phrase = " ".join(current_phrase)
-            phrases.append(joined_current_phrase)
+            indices_of_shana_in_current_phrase = [i for i, token in enumerate(current_phrase) if token in TIME_WORDS - SHANA_STARTER]
+            last_index_of_shana = indices_of_shana_in_current_phrase[-1] if indices_of_shana_in_current_phrase else None
+            if last_index_of_shana is not None and last_index_of_shana != len(current_phrase) - 1:
+                phrases.append(" ".join(current_phrase[:last_index_of_shana + 1]))
+                phrases.append(" ".join(current_phrase[last_index_of_shana + 1:]))
+            else:
+                phrases.append(" ".join(current_phrase))
             current_phrase.clear()
 
     prev_raw_token, prev_token = None, None
     for i, (raw_token, (token, conjugate_letters)) in enumerate(raw_tokens_tokens_conjugate_letters):
         if i + 1 < len(raw_tokens):
-            next_raw_token, (next_token, _) = raw_tokens_tokens_conjugate_letters[i + 1]
+            next_raw_token, (next_token, next_conjugate_letters) = raw_tokens_tokens_conjugate_letters[i + 1]
         else:
-            next_raw_token, next_token = None, None
+            next_raw_token, next_token, next_conjugate_letters = None, None, []
 
         # Check if token is a number word or in the ignore words
-        if conjugate_letters not in [[], [ConjugateLetter.VAV]] and current_phrase:
+        if conjugate_letters not in [[], [ConjugateLetter.VAV]] and current_phrase \
+                and prev_token not in SHANA_STARTER:
             terminate_phrase()
 
         if raw_token in EXCEPTIONS:
@@ -356,8 +375,9 @@ def extract_number_phrases(verse: str) -> list[str]:
             terminate_phrase()
         elif (raw_token, next_raw_token) in EXCEPTIONS_BECAUSE_OF_NEXT_WORD:
             terminate_phrase()
-        elif token in THE_ONE and len(current_phrase) == 0 and next_token != "עֶשְׂרֵה":
-            continue
+        elif token in THE_ONE and len(current_phrase) == 0 and next_token not in ["עֶשְׂרֵה", "לַחֹדֶשׁ"] \
+                and next_conjugate_letters != [ConjugateLetter.VAV]:
+            pass
         elif token in ALL_NUMBER_WORDS or raw_token in ALL_NUMBER_WORDS:
             # if conjugate_letter in {ConjugateLetter.BET, ConjugateLetter.HEY}:
             #     terminate_phrase()
@@ -369,16 +389,9 @@ def extract_number_phrases(verse: str) -> list[str]:
 
             # Start or continue a phrase
             current_phrase.append(raw_token)
-        elif token in TIME_WORDS and current_phrase:
+        elif token in TIME_WORDS and current_phrase or token in SHANA_STARTER:
             # If 'שנה' appears we include it
             current_phrase.append(raw_token)
-
-            # Look ahead to check if another 'שנה' exists at the end of this phrase
-            look_ahead_tokens = raw_tokens[i + 1:]
-            has_following_shana = any(preprocess_token(t, expected_nouns=SHANA_WORDS)[0]
-                                      in TIME_WORDS for t in look_ahead_tokens)
-            if not has_following_shana:
-                terminate_phrase()
         else:
             # Not a number word or ignore word while phrase_active
             terminate_phrase()
