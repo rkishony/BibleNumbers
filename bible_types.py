@@ -165,9 +165,9 @@ class Time:
     def __str__(self):
         if self.is_date:
             if self._is_day_only():
-                return f"{self.days} יום לחודש"
+                return f"יום {self.days} לחודש"
             if self._is_month_only():
-                return f"{self.months} חודש לשנה"
+                return f"חודש {self.months} בשנה"
             if self._is_year_only():
                 return f"{self.years} שנים ל-"
             raise ValueError("Invalid date")

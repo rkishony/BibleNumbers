@@ -3,7 +3,6 @@ from typing import List
 from bible_types import VerseAndNumericHebrews, NumericHebrew
 from create_verses_html import create_html_of_verses_with_numbers
 from programmatic_nikud import extract_number_phrases, hebrew_num_to_int, get_verses_with_numbers
-from verses_to_matches import dump_verses_to_numerics
 
 
 def extract_numeric_hebrews(verse) -> List[NumericHebrew]:

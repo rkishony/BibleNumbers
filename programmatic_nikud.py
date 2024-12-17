@@ -3,8 +3,7 @@ from enum import Enum
 from typing import Optional, Iterable, List
 
 from bible_types import Time
-from read_bible import get_bible
-
+from read_bible import get_bible, get_bible_as_one_text
 
 
 UNITS_MAP = {
@@ -63,6 +62,37 @@ UNITS_MAP = {
     'שְׁמוֹנֶה': 8,
 }
 
+ORDINAL_MAP = {
+    # Masculine
+    'רִאשׁוֹן': 1,
+    'שֵׁנִי': 2,
+    'שֵּׁנִי': 2,
+    'שְׁלִישִׁי': 3,
+    'רְבִיעִי': 4,
+    'חֲמִישִׁי': 5,
+    'שִׁשִּׁי': 6,
+    'שִּׁשִּׁי': 6,
+    'שְּׁבִיעִי': 7,
+    'שְּׁמִינִי': 8,
+    'תְּשִׁיעִי': 9,
+    'עֲשִׂירִי': 10,
+
+    # Feminine
+    'רִאשׁוֹנָה': 1,
+    'שְׁנִיָה': 2,
+    'שֵּׁנִית': 2,
+    'שְׁלִישִׁית': 3,
+    'רְבִיעִית': 4,
+    'חֲמִישִׁית': 5,
+    'שִׁשִּׁית': 6,
+    'שְּׁבִיעִית': 7,
+    'שְּׁבִיעִת': 7,
+    'שְׁמִינִית': 8,
+    'תְּשִׁיעִית': 9,
+    'עֲשִׂירִית': 10,
+}
+
+
 TENS_NUM_MAP = {
     # Feminine
     'עֶשֶׂר': 10,
@@ -100,7 +130,7 @@ HUNDREDS_MAP = {
     'מְאַת': 100,
 }
 
-FIXED_MAP = UNITS_MAP | TENS_NUM_MAP | COUPLE_MAP | HUNDREDS_MAP
+FIXED_MAP = UNITS_MAP | ORDINAL_MAP | TENS_NUM_MAP | COUPLE_MAP | HUNDREDS_MAP
 
 HUNDREDS_PLURAL_MAP = {
     'מֵאוֹת': 100,
@@ -135,11 +165,17 @@ ALL_NUMBER_WORDS = set(FIXED_MAP) | set(HUNDREDS_MAP) | set(ALL_PLURAL_MAP)
 
 
 SHANA_WORDS = {"שָׁנָה", "שָׁנָה", "שְׁנוֹת", "שָׁנִים", "שְׁנֵי"}
-SHANA_STARTER = {"בַּשָׁנָה", "בַשָּׁנָה", "בִּשְׁנַת"}
-MONTH_WORDS = {"לַחֹדֶשׁ", "לְחֹדֶשׁ", "חֹדֶשׁ", "חֳדָשִׁים", "בַחֹדֶשׁ"}
+SHANA_STARTER = {"בַשָּׁנָה", "בִּשְׁנַת", "בַּשָּׁנָה"}
+MONTH_WORDS = {"לַחֹדֶשׁ", "לְחֹדֶשׁ", "חֹדֶשׁ", "חֳדָשִׁים", "לַחֹדֶשׁ"}
+MONTH_STARTER = {"בַּחֹדֶשׁ", "הַחֹדֶשׁ", "וּבַחֹדֶשׁ"}
 DAY_WORDS = {'יָמִים', 'יוֹם', 'הַיָּמִים'}
 NIGHT_WORDS = {'לַיְלָה', 'לָיְלָה', 'לֵיל', 'לֵילוֹת'}
-TIME_WORDS = SHANA_WORDS | MONTH_WORDS | DAY_WORDS | NIGHT_WORDS | SHANA_STARTER
+TIME_WORDS = SHANA_WORDS | MONTH_WORDS | DAY_WORDS | NIGHT_WORDS | SHANA_STARTER | MONTH_STARTER
+
+BIBLE = get_bible_as_one_text(with_nikud=True, remove_punctuations=True)
+for word in ALL_NUMBER_WORDS | TIME_WORDS:
+    if word not in BIBLE:
+        print(f"Word not found in Bible: {word}")
 
 
 EXCEPTIONS = ['האחת']
@@ -276,6 +312,9 @@ def hebrew_num_to_int(phrase: str) -> int:
         if is_first and token in SHANA_STARTER:
             total = Time(0, is_date=True)
             continue
+        if is_first and token in MONTH_STARTER:
+            total = Time(months=0, is_date=True)
+            continue
         if token in SHANA_WORDS and not (token == 'שְׁנֵי' and len(segment_parts) == 0):
             multiply_all_thus_far(Time(1))
             continue
@@ -348,7 +387,8 @@ def extract_number_phrases(verse: str) -> list[str]:
 
     def terminate_phrase():
         if current_phrase:
-            indices_of_shana_in_current_phrase = [i for i, token in enumerate(current_phrase) if token in TIME_WORDS - SHANA_STARTER]
+            indices_of_shana_in_current_phrase = [i for i, token in enumerate(current_phrase)
+                                                  if token in TIME_WORDS - SHANA_STARTER - MONTH_STARTER]
             last_index_of_shana = indices_of_shana_in_current_phrase[-1] if indices_of_shana_in_current_phrase else None
             if last_index_of_shana is not None and last_index_of_shana != len(current_phrase) - 1:
                 phrases.append(" ".join(current_phrase[:last_index_of_shana + 1]))
@@ -364,11 +404,11 @@ def extract_number_phrases(verse: str) -> list[str]:
         else:
             next_raw_token, next_token, next_conjugate_letters = None, None, []
 
-        # Check if token is a number word or in the ignore words
         if conjugate_letters not in [[], [ConjugateLetter.VAV]] and current_phrase \
-                and prev_token not in SHANA_STARTER:
+                and prev_token not in (SHANA_STARTER | MONTH_STARTER):
             terminate_phrase()
-
+        if raw_token in SHANA_STARTER | MONTH_STARTER:
+            terminate_phrase()
         if raw_token in EXCEPTIONS:
             terminate_phrase()
         elif (prev_token, raw_token) in EXCEPTION_BECAUSE_OF_PREVIOUS_WORD \
@@ -391,7 +431,7 @@ def extract_number_phrases(verse: str) -> list[str]:
 
             # Start or continue a phrase
             current_phrase.append(raw_token)
-        elif token in TIME_WORDS and current_phrase or token in SHANA_STARTER:
+        elif token in TIME_WORDS and current_phrase or token in SHANA_STARTER | MONTH_STARTER:
             # If 'שנה' appears we include it
             current_phrase.append(raw_token)
         else:

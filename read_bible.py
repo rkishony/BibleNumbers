@@ -73,8 +73,9 @@ def get_bible(with_nikud: bool = False, remove_punctuations: bool = True) -> Ver
     return BIBLES[(name, remove_punctuations)]
 
 
-def get_bible_as_one_text(with_nikud: bool = False) -> str:
-    return '\n'.join([verse.text for verse in get_bible(with_nikud)])
+def get_bible_as_one_text(with_nikud: bool = False, remove_punctuations: bool = True) -> str:
+    return '\n'.join([verse.text for verse in get_bible(with_nikud, remove_punctuations)])
+
 
 def find_all_verses_containing(phrase: str, with_nikud: bool = False, remove_punctuations: bool = True) -> List[Verse]:
     verses = get_bible(with_nikud, remove_punctuations)
