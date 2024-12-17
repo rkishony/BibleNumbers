@@ -124,6 +124,7 @@ PLURAL_MAP = {
     'רְבָבוֹת': 10000,
     'רִבְבוֹת': 10000,
     'שָׁבֻעִים': 7,
+    'עֲשָׂרֹת': 10,
 }
 
 ALL_PLURAL_MAP = PLURAL_MAP | TENTHOUSANDS_MAP | THOUSANDS_MAP | HUNDREDS_PLURAL_MAP
@@ -137,7 +138,7 @@ SHANA_WORDS = {"שָׁנָה", "שָׁנָה", "שְׁנוֹת", "שָׁנִים
 SHANA_STARTER = {"בַּשָׁנָה", "בַשָּׁנָה", "בִּשְׁנַת"}
 MONTH_WORDS = {"לַחֹדֶשׁ", "לְחֹדֶשׁ", "חֹדֶשׁ", "חֳדָשִׁים", "בַחֹדֶשׁ"}
 DAY_WORDS = {'יָמִים', 'יוֹם', 'הַיָּמִים'}
-NIGHT_WORDS = {'לַיְלָה', 'לֵיל', 'לֵילוֹת'}
+NIGHT_WORDS = {'לַיְלָה', 'לָיְלָה', 'לֵיל', 'לֵילוֹת'}
 TIME_WORDS = SHANA_WORDS | MONTH_WORDS | DAY_WORDS | NIGHT_WORDS | SHANA_STARTER
 
 
