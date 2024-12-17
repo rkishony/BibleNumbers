@@ -377,7 +377,8 @@ def extract_number_phrases(verse: str) -> list[str]:
             terminate_phrase()
         elif token in THE_ONE and len(current_phrase) == 0 and next_token not in ["עֶשְׂרֵה", "לַחֹדֶשׁ"] \
                 and next_conjugate_letters != [ConjugateLetter.VAV]:
-            pass
+            current_phrase.append(raw_token)
+            terminate_phrase()
         elif token in ALL_NUMBER_WORDS or raw_token in ALL_NUMBER_WORDS:
             # if conjugate_letter in {ConjugateLetter.BET, ConjugateLetter.HEY}:
             #     terminate_phrase()

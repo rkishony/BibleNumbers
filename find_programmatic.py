@@ -37,6 +37,11 @@ def main():
         verses_and_numeric_hebrews.append(VerseAndNumericHebrews(verse, numeric_hebrews))
     create_html_of_verses_with_numbers(verses_and_numeric_hebrews)
 
+    total_numeric_hebrews = 0
+    for verse, numeric_hebrews in verses_to_matches.items():
+        total_numeric_hebrews += len(numeric_hebrews)
+    print(f"Total numeric hebrews: {total_numeric_hebrews}")
+
 
 if __name__ == "__main__":
     main()
