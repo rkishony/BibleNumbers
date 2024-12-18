@@ -8,7 +8,7 @@ HTML_HEAD = """
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Hebrew Text Layout</title>
+    <title>Bible Verses with Numbers</title>
     <style>
         body {
             font-family: Arial, sans-serif;

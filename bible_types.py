@@ -165,11 +165,11 @@ class Time:
     def __str__(self):
         if self.is_date:
             if self._is_day_only():
-                return f"יום {self.days} לחודש"
+                return f"יום מספר {self.days}"
             if self._is_month_only():
-                return f"חודש {self.months} בשנה"
+                return f"חודש מספר{self.months}"
             if self._is_year_only():
-                return f"{self.years} שנים ל-"
+                return f"שנה מספר {self.years}"
             raise ValueError("Invalid date")
         texts = []
         if self.years:

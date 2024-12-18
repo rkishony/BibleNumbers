@@ -169,8 +169,10 @@ SHANA_STARTER = {"בַשָּׁנָה", "בִּשְׁנַת", "בַּשָּׁנָ
 MONTH_WORDS = {"לַחֹדֶשׁ", "לְחֹדֶשׁ", "חֹדֶשׁ", "חֳדָשִׁים", "לַחֹדֶשׁ"}
 MONTH_STARTER = {"בַּחֹדֶשׁ", "הַחֹדֶשׁ", "וּבַחֹדֶשׁ"}
 DAY_WORDS = {'יָמִים', 'יוֹם', 'הַיָּמִים'}
+DAY_STARTER = {'בַּיּוֹם'}
 NIGHT_WORDS = {'לַיְלָה', 'לָיְלָה', 'לֵיל', 'לֵילוֹת'}
-TIME_WORDS = SHANA_WORDS | MONTH_WORDS | DAY_WORDS | NIGHT_WORDS | SHANA_STARTER | MONTH_STARTER
+STARTER_TIME_WORDS = SHANA_STARTER | MONTH_STARTER | DAY_STARTER
+TIME_WORDS = SHANA_WORDS | MONTH_WORDS | DAY_WORDS | NIGHT_WORDS | STARTER_TIME_WORDS
 
 BIBLE = get_bible_as_one_text(with_nikud=True, remove_punctuations=True)
 for word in ALL_NUMBER_WORDS | TIME_WORDS:
@@ -315,6 +317,9 @@ def hebrew_num_to_int(phrase: str) -> int:
         if is_first and token in MONTH_STARTER:
             total = Time(months=0, is_date=True)
             continue
+        if is_first and token in DAY_STARTER:
+            total = Time(days=0, is_date=True)
+            continue
         if token in SHANA_WORDS and not (token == 'שְׁנֵי' and len(segment_parts) == 0):
             multiply_all_thus_far(Time(1))
             continue
@@ -385,16 +390,20 @@ def extract_number_phrases(verse: str) -> list[str]:
     phrases = []
     current_phrase = []
 
+    def add_phrase(tokens):
+        if not all(token in TIME_WORDS for token in tokens):
+            phrases.append(" ".join(tokens))
+
     def terminate_phrase():
         if current_phrase:
             indices_of_shana_in_current_phrase = [i for i, token in enumerate(current_phrase)
-                                                  if token in TIME_WORDS - SHANA_STARTER - MONTH_STARTER]
+                                                  if token in TIME_WORDS - STARTER_TIME_WORDS]
             last_index_of_shana = indices_of_shana_in_current_phrase[-1] if indices_of_shana_in_current_phrase else None
             if last_index_of_shana is not None and last_index_of_shana != len(current_phrase) - 1:
-                phrases.append(" ".join(current_phrase[:last_index_of_shana + 1]))
-                phrases.append(" ".join(current_phrase[last_index_of_shana + 1:]))
+                add_phrase(current_phrase[:last_index_of_shana + 1])
+                add_phrase(current_phrase[last_index_of_shana + 1:])
             else:
-                phrases.append(" ".join(current_phrase))
+                add_phrase(current_phrase)
             current_phrase.clear()
 
     prev_raw_token, prev_token = None, None
@@ -405,9 +414,9 @@ def extract_number_phrases(verse: str) -> list[str]:
             next_raw_token, next_token, next_conjugate_letters = None, None, []
 
         if conjugate_letters not in [[], [ConjugateLetter.VAV]] and current_phrase \
-                and prev_token not in (SHANA_STARTER | MONTH_STARTER):
+                and prev_token not in STARTER_TIME_WORDS:
             terminate_phrase()
-        if raw_token in SHANA_STARTER | MONTH_STARTER:
+        if raw_token in STARTER_TIME_WORDS:
             terminate_phrase()
         if raw_token in EXCEPTIONS:
             terminate_phrase()
@@ -431,7 +440,7 @@ def extract_number_phrases(verse: str) -> list[str]:
 
             # Start or continue a phrase
             current_phrase.append(raw_token)
-        elif token in TIME_WORDS and current_phrase or token in SHANA_STARTER | MONTH_STARTER:
+        elif token in TIME_WORDS and current_phrase or token in STARTER_TIME_WORDS:
             # If 'שנה' appears we include it
             current_phrase.append(raw_token)
         else:
