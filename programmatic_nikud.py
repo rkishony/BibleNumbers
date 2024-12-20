@@ -434,15 +434,14 @@ def extract_number_phrases(verse: str) -> list[str]:
                 and next_conjugate_letters != [ConjugateLetter.VAV]:
             current_phrase.append(i)
             terminate_phrase()
-        elif token in ALL_NUMBER_WORDS or raw_token in ALL_NUMBER_WORDS:
-            # if conjugate_letter in {ConjugateLetter.BET, ConjugateLetter.HEY}:
-            #     terminate_phrase()
+        elif (token in ALL_WORDS or raw_token in ALL_WORDS) and (
+                prev_token == token or token == 'מֵאָה' and next_token not in ALL_TIME_WORDS and \
+                not any(raw_tokens_tokens_conjugate_letters[t][1][0] in THOUSANDS_MAP | COUPLE_MAP
+                        for t in current_phrase)):
             # terminate if end of sentence, or for שנים שנים
-            if prev_token == token or token == 'מֵאָה' and next_token not in ALL_TIME_WORDS and \
-                    not any(raw_tokens_tokens_conjugate_letters[t][1][0] in THOUSANDS_MAP | COUPLE_MAP
-                            for t in current_phrase):
-                terminate_phrase()
-
+            terminate_phrase()
+            current_phrase.append(i)
+        elif token in ALL_NUMBER_WORDS:
             # Start or continue a phrase
             current_phrase.append(i)
         elif token in ALL_TIME_WORDS and current_phrase or token in STARTER_TIME_WORDS:
