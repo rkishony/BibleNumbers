@@ -49,6 +49,7 @@ UNITS_MAP = {
     'שֵׁשֶׁת': 6,
     'שִׁבְעַת': 7,
     'שְׁמוֹנַת': 8,
+    'שְׁמֹנַת': 8,
     'תִשְׁעַת': 9,
 
     # Conjunctive
@@ -159,8 +160,6 @@ PLURAL_MAP = {
 }
 
 ALL_PLURAL_MAP = PLURAL_MAP | TENTHOUSANDS_MAP | THOUSANDS_MAP | HUNDREDS_PLURAL_MAP
-
-LARGER_THAN_100_MAP = THOUSANDS_MAP | TENTHOUSANDS_MAP | PLURAL_MAP
 
 ALL_NUMBER_WORDS = set(FIXED_MAP) | set(HUNDREDS_MAP) | set(ALL_PLURAL_MAP)
 
@@ -349,23 +348,16 @@ def hebrew_num_to_int(phrase: str) -> int:
             add_number(FIXED_MAP[token], conjugate_letters)
             continue
 
-        # Hundreds
-        if token in HUNDREDS_PLURAL_MAP:
-            val = HUNDREDS_PLURAL_MAP[token]
-            if conjugate_letters:
-                current_segment += val
-                segment_parts.append(val)
-            else:
-                multiply_last(val)
-            continue
-
         if token in ALL_PLURAL_MAP:
             value = ALL_PLURAL_MAP[token]
             if conjugate_letters:
                 current_segment += value
                 segment_parts.append(value)
             else:
-                multiply_all_thus_far(value)
+                if token in HUNDREDS_PLURAL_MAP:
+                    multiply_last(value)
+                else:
+                    multiply_all_thus_far(value)
             continue
 
         # token not recognized as number, we can continue or raise an error
@@ -439,7 +431,7 @@ def extract_number_phrases(verse: str) -> list[str]:
             terminate_phrase()
         elif (token in ALL_WORDS or raw_token in ALL_WORDS) and (
                 prev_token == token or token == 'מֵאָה' and next_token not in ALL_TIME_WORDS and \
-                not any(raw_tokens_tokens_conjugate_letters[t][1][0] in THOUSANDS_MAP | COUPLE_MAP
+                not any(raw_tokens_tokens_conjugate_letters[t][1][0] in ALL_PLURAL_MAP | COUPLE_MAP
                         for t in current_phrase)):
             # terminate if end of sentence, or for שנים שנים
             terminate_phrase()
