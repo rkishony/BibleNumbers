@@ -169,13 +169,14 @@ SHANA_STARTER = {"בַשָּׁנָה", "בִּשְׁנַת", "בַּשָּׁנָ
 MONTH_WORDS = {"לַחֹדֶשׁ", "לְחֹדֶשׁ", "חֹדֶשׁ", "חֳדָשִׁים", "לַחֹדֶשׁ"}
 MONTH_STARTER = {"בַּחֹדֶשׁ", "הַחֹדֶשׁ", "וּבַחֹדֶשׁ"}
 DAY_WORDS = {'יָמִים', 'יוֹם', 'הַיָּמִים'}
-DAY_STARTER = {'בַּיּוֹם'}
+DAY_STARTER = {'בַּיּוֹם', 'יוֹם'}
 NIGHT_WORDS = {'לַיְלָה', 'לָיְלָה', 'לֵיל', 'לֵילוֹת'}
+TIME_WORDS = SHANA_WORDS | MONTH_WORDS | DAY_WORDS | NIGHT_WORDS
 STARTER_TIME_WORDS = SHANA_STARTER | MONTH_STARTER | DAY_STARTER
-TIME_WORDS = SHANA_WORDS | MONTH_WORDS | DAY_WORDS | NIGHT_WORDS | STARTER_TIME_WORDS
+ALL_TIME_WORDS = TIME_WORDS | STARTER_TIME_WORDS
 
 BIBLE = get_bible_as_one_text(with_nikud=True, remove_punctuations=True)
-for word in ALL_NUMBER_WORDS | TIME_WORDS:
+for word in ALL_NUMBER_WORDS | ALL_TIME_WORDS:
     if word not in BIBLE:
         print(f"Word not found in Bible: {word}")
 
@@ -183,6 +184,7 @@ for word in ALL_NUMBER_WORDS | TIME_WORDS:
 EXCEPTIONS = ['האחת']
 
 EXCEPTION_BECAUSE_OF_PREVIOUS_WORD = [
+    ('שָׁנִי', 'וְשֵׁשׁ'),
     ('בְּאֵר', 'שֶׁבַע'),
     ('בְאֵר', 'שֶׁבַע'),
     ('קִרְיַת', 'אַרְבַּע'),
@@ -209,7 +211,7 @@ THE_ONE = [
 ]
 
 
-ALL_WORDS = ALL_NUMBER_WORDS | TIME_WORDS \
+ALL_WORDS = ALL_NUMBER_WORDS | ALL_TIME_WORDS \
             | set(w for w, _ in EXCEPTION_BECAUSE_OF_PREVIOUS_WORD) \
             | set(w for _, w in EXCEPTIONS_BECAUSE_OF_NEXT_WORD)
 
@@ -308,7 +310,7 @@ def hebrew_num_to_int(phrase: str) -> int:
         next_token = tokens[j + 1] if not is_last else None
         token, conjugate_letters = preprocess_token(raw_token, expected_nouns=ALL_WORDS)
 
-        if token not in ALL_NUMBER_WORDS and token not in TIME_WORDS:
+        if token not in ALL_NUMBER_WORDS and token not in ALL_TIME_WORDS:
             print(f"Token not recognized as number: {token}")
 
         if is_first and token in SHANA_STARTER:
@@ -390,20 +392,22 @@ def extract_number_phrases(verse: str) -> list[str]:
     phrases = []
     current_phrase = []
 
-    def add_phrase(tokens):
-        if not all(token in TIME_WORDS for token in tokens):
-            phrases.append(" ".join(tokens))
+    def add_phrase(from_, to_):
+        tokens = [token for raw_token, (token, _) in raw_tokens_tokens_conjugate_letters[from_:to_]]
+        raw_tokens = [raw_token for raw_token, _ in raw_tokens_tokens_conjugate_letters[from_:to_]]
+        if not all(token in ALL_TIME_WORDS - ALL_NUMBER_WORDS for token in tokens):
+            phrases.append(" ".join(raw_tokens))
 
     def terminate_phrase():
         if current_phrase:
             indices_of_shana_in_current_phrase = [i for i, token in enumerate(current_phrase)
-                                                  if token in TIME_WORDS - STARTER_TIME_WORDS]
+                                                  if token in ALL_TIME_WORDS - STARTER_TIME_WORDS]
             last_index_of_shana = indices_of_shana_in_current_phrase[-1] if indices_of_shana_in_current_phrase else None
             if last_index_of_shana is not None and last_index_of_shana != len(current_phrase) - 1:
-                add_phrase(current_phrase[:last_index_of_shana + 1])
-                add_phrase(current_phrase[last_index_of_shana + 1:])
+                add_phrase(current_phrase[0], current_phrase[last_index_of_shana + 1])
+                add_phrase(current_phrase[last_index_of_shana + 1], current_phrase[-1] + 1)
             else:
-                add_phrase(current_phrase)
+                add_phrase(current_phrase[0], current_phrase[-1] + 1)
             current_phrase.clear()
 
     prev_raw_token, prev_token = None, None
@@ -416,7 +420,7 @@ def extract_number_phrases(verse: str) -> list[str]:
         if conjugate_letters not in [[], [ConjugateLetter.VAV]] and current_phrase \
                 and prev_token not in STARTER_TIME_WORDS:
             terminate_phrase()
-        if raw_token in STARTER_TIME_WORDS:
+        if raw_token in STARTER_TIME_WORDS and raw_token not in TIME_WORDS:
             terminate_phrase()
         if raw_token in EXCEPTIONS:
             terminate_phrase()
@@ -427,22 +431,22 @@ def extract_number_phrases(verse: str) -> list[str]:
             terminate_phrase()
         elif token in THE_ONE and len(current_phrase) == 0 and next_token not in ["עֶשְׂרֵה", "לַחֹדֶשׁ"] \
                 and next_conjugate_letters != [ConjugateLetter.VAV]:
-            current_phrase.append(raw_token)
+            current_phrase.append(i)
             terminate_phrase()
         elif token in ALL_NUMBER_WORDS or raw_token in ALL_NUMBER_WORDS:
             # if conjugate_letter in {ConjugateLetter.BET, ConjugateLetter.HEY}:
             #     terminate_phrase()
             # terminate if end of sentence, or for שנים שנים
-            if prev_token == token or token == 'מֵאָה' and next_token not in TIME_WORDS and \
-                    not any(preprocess_token(t, expected_nouns=ALL_WORDS)[0] in THOUSANDS_MAP | COUPLE_MAP
+            if prev_token == token or token == 'מֵאָה' and next_token not in ALL_TIME_WORDS and \
+                    not any(raw_tokens_tokens_conjugate_letters[t][1][0] in THOUSANDS_MAP | COUPLE_MAP
                             for t in current_phrase):
                 terminate_phrase()
 
             # Start or continue a phrase
-            current_phrase.append(raw_token)
-        elif token in TIME_WORDS and current_phrase or token in STARTER_TIME_WORDS:
+            current_phrase.append(i)
+        elif token in ALL_TIME_WORDS and current_phrase or token in STARTER_TIME_WORDS:
             # If 'שנה' appears we include it
-            current_phrase.append(raw_token)
+            current_phrase.append(i)
         else:
             # Not a number word or ignore word while phrase_active
             terminate_phrase()
