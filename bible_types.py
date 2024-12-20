@@ -6,6 +6,7 @@ import operator
 import numpy as np
 from pydantic import BaseModel
 
+from bible_utils import remove_nikud
 from utils import find_all_start_indices
 
 
@@ -102,13 +103,13 @@ class VerseAndNumericHebrews:
                 numeric_hebrew_to_indices[numeric_keyword] = available_indices
         return numeric_hebrew_to_indices
 
-    def _to_colored_str(self, is_html: bool) -> str:
+    def _to_formatted_str(self, format: str) -> str:
         text = self.verse.text
         numeric_hebrew_to_indices = self.map_numeric_hebrews()
         indices_to_numeric_hebrew_and_is_first = {index: (numeric_hebrew, k == 0)
                                                   for numeric_hebrew, indices in numeric_hebrew_to_indices.items()
                                                   for k, index in enumerate(indices)}
-        text_len = len(text)
+        text_len = len(remove_nikud(text))
         for start_index, (numeric_hebrew, is_first) in sorted(indices_to_numeric_hebrew_and_is_first.items(),
                                                               key=lambda x: x[0], reverse=True):
             is_keyword = isinstance(numeric_hebrew, str)
@@ -122,7 +123,7 @@ class VerseAndNumericHebrews:
                 else:
                     bracket = f" [{numeric_hebrew.number}]"
             assert quote == text[start_index:start_index + len(quote)]
-            if is_html:
+            if format == "html":
                 if not is_keyword:
                     color = "blue" if is_first else "cyan"
                 else:
@@ -131,7 +132,7 @@ class VerseAndNumericHebrews:
                 if bracket:
                     bracket_color = "green"
                     highlighted_text += f"<span style='color:{bracket_color}'>{bracket}</span>"
-            else:
+            elif format == "color_text":
                 if not is_keyword:
                     color = UNIQUE_QUOTE_COLOR if is_first else REPEATED_QUOTE_COLOR
                 else:
@@ -139,17 +140,25 @@ class VerseAndNumericHebrews:
                 highlighted_text = f"{color}{quote}{RESET}"
                 if bracket:
                     highlighted_text += f"{NUMBER_COLOR}{bracket}{RESET}"
+            elif format == "text":
+                highlighted_text = f"({quote}){bracket}"
+                text_len += 2
+            else:
+                raise ValueError("Invalid format")
             text_len += len(bracket)
             text = text[:start_index] + highlighted_text + text[start_index + len(quote):]
-        if not is_html:
+        if format != "html":
             text = " " * (WIDTH - text_len) + text
         return text
 
     def to_colored_text(self) -> str:
-        return self._to_colored_str(is_html=False)
+        return self._to_formatted_str("color_text")
+
+    def to_text(self) -> str:
+        return self._to_formatted_str("text")
 
     def to_html(self) -> Tuple[str, str]:
-        verse_html = self._to_colored_str(is_html=True)
+        verse_html = self._to_formatted_str("html")
         location_html = f"{self.verse.book} {self.verse.chapter} {self.verse.letter}"
 
         return verse_html, location_html
@@ -229,7 +238,8 @@ class Time:
 
     def __mul__(self, other):
         if isinstance(other, Time):
-            raise ValueError("Multiplication of two Time objects is not supported")
+            # raise ValueError("Multiplication of two Time objects is not supported")
+            pass
         return Time(self.years * other if self.years is not None else None,
                     self.months * other if self.months is not None else None,
                     self.days * other if self.days is not None else None,

@@ -70,3 +70,10 @@ def create_html_of_verses_with_numbers(verses_and_numeric_hebrews: List[VerseAnd
     with open(file_name, 'w') as file:
         file.write(html)
 
+
+def create_text_of_verses_with_numbers(verses_and_numeric_hebrews: List[VerseAndNumericHebrews],
+                                       file_name='verses_with_numbers.txt'):
+    with open(file_name, 'w') as file:
+        for verse_and_numeric_hebrews in verses_and_numeric_hebrews:
+            verse_text = verse_and_numeric_hebrews.to_text()
+            file.write(f"{verse_text}\n\n")

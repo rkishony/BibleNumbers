@@ -1,7 +1,9 @@
+from __future__ import annotations
 import re
-from typing import Optional
+from typing import Optional, TYPE_CHECKING
 
-from bible_types import Verses
+if TYPE_CHECKING:
+    from bible_types import Verses
 
 
 def search_in_bible(quote: str, verses: Verses, expected: Optional[int] = None) -> Verses:
@@ -33,3 +35,9 @@ def tokenize(s):
 def reconstruct(tokens):
     # Reconstruct the sentence from the tokenized parts
     return ''.join(part for _, part in tokens)
+
+
+def remove_nikud(s):
+    # Remove niqqud from the text
+    nikud = "".join(chr(i) for i in range(0x590, 0x5C8))
+    return ''.join(char for char in s if char not in nikud)

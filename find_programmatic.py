@@ -3,7 +3,7 @@ from typing import List
 from matplotlib import pyplot as plt
 
 from bible_types import VerseAndNumericHebrews, NumericHebrew, Time
-from create_verses_html import create_html_of_verses_with_numbers
+from create_verses_html import create_html_of_verses_with_numbers, create_text_of_verses_with_numbers
 from programmatic_nikud import extract_number_phrases, hebrew_num_to_int, get_verses_with_numbers
 
 
@@ -44,6 +44,7 @@ def main():
     for verse, numeric_hebrews in verses_to_matches.items():
         verses_and_numeric_hebrews.append(VerseAndNumericHebrews(verse, numeric_hebrews))
     create_html_of_verses_with_numbers(verses_and_numeric_hebrews)
+    create_text_of_verses_with_numbers(verses_and_numeric_hebrews)
 
     total_numeric_hebrews = 0
     for verse, numeric_hebrews in verses_to_matches.items():
