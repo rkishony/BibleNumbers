@@ -16,7 +16,7 @@ def search_in_bible(quote: str, verses: Verses, expected: Optional[int] = None) 
     return verses
 
 
-def tokenize(s):
+def tokenize_words_and_punctuations(s) -> list[tuple[bool, str]]:
     # Define the regex for Hebrew words with niqqud
     word_pattern = r'[\u0590-\u05FF]+'
 
@@ -29,6 +29,13 @@ def tokenize(s):
         for part in split_parts if part != ""
     ]
 
+    # assert that word in even index and separator in odd index:
+    for i, (is_word, _) in enumerate(tokenized):
+        if i % 2 == 0:
+            assert is_word
+        else:
+            assert not is_word
+
     return tokenized
 
 
@@ -37,7 +44,3 @@ def reconstruct(tokens):
     return ''.join(part for _, part in tokens)
 
 
-def remove_nikud(s):
-    # Remove niqqud from the text
-    nikud = "".join(chr(i) for i in range(0x590, 0x5C8))
-    return ''.join(char for char in s if char not in nikud)

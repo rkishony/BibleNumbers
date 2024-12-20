@@ -6,7 +6,7 @@ import operator
 import numpy as np
 from pydantic import BaseModel
 
-from bible_utils import remove_nikud
+from nikud_utils import remove_nikud
 from utils import find_all_start_indices
 
 

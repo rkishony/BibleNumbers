@@ -1,8 +1,10 @@
 import re
 from enum import Enum
-from typing import Iterable, List
+from typing import Iterable, List, NamedTuple
 
-from bible_types import Time
+from bible_types import Time, NumericHebrew
+from bible_utils import tokenize_words_and_punctuations
+from nikud_utils import NIKUD_PATTERN
 from read_bible import get_bible, get_bible_as_one_text
 
 
@@ -162,6 +164,7 @@ SHANA_WORDS = {"שָׁנָה", "שָׁנָה", "שְׁנוֹת", "שָׁנִים
 SHANA_STARTER = {"בַשָּׁנָה", "בִּשְׁנַת", "בַּשָּׁנָה", "שְׁנַת"}
 MONTH_WORDS = {"לַחֹדֶשׁ", "לְחֹדֶשׁ", "חֹדֶשׁ", "חֳדָשִׁים", "לַחֹדֶשׁ"}
 MONTH_STARTER = {"בַּחֹדֶשׁ", "הַחֹדֶשׁ", "וּבַחֹדֶשׁ"}
+TO_MONTH = {"לַחֹדֶשׁ", "לְחֹדֶשׁ", "בַחֹדֶשׁ"}
 DAY_WORDS = {'יָמִים', 'יוֹם', 'הַיָּמִים'}
 DAY_STARTER = {'בַּיּוֹם', 'יוֹם', 'וּבַיּוֹם'}
 NIGHT_WORDS = {'לַיְלָה', 'לָיְלָה', 'לֵיל', 'לֵילוֹת'}
@@ -222,10 +225,10 @@ def preprocess_token(token: str, letters: Iterable[ConjugateLetter] = ConjugateL
     """Preprocess token to identify if it's a conjunction and remove leading 'ו'."""
     if expected_nouns is not None and token in expected_nouns:
         return token, []
-    nikud_pattern = "[\u0590-\u05C7]*"  # Matches Hebrew vowel signs and diacritics
+
     for letter in letters:
         if token.startswith(letter.value):
-            pattern = f"^{letter.value}{nikud_pattern}"  # Match the conjugate letter and Nikud at the start only
+            pattern = f"^{letter.value}{NIKUD_PATTERN}"  # Match the conjugate letter and Nikud at the start only
             # Remove only the leading conjugate letter with Nikud
             result = re.sub(pattern, "", token)
             if expected_nouns is None:
@@ -236,6 +239,185 @@ def preprocess_token(token: str, letters: Iterable[ConjugateLetter] = ConjugateL
             if rec_token in expected_nouns:
                 return rec_token, rec_letters + [letter]
     return token, []
+
+
+class ConjWord(NamedTuple):
+    raw_word: str = None
+    word: str = None
+    conjugate_letters: List[ConjugateLetter] = None
+
+
+def convert_word_to_conj_word(raw_word: str) -> ConjWord:
+    word, conjugate_letters = preprocess_token(raw_word, expected_nouns=ALL_WORDS)
+    return ConjWord(raw_word, word, conjugate_letters)
+
+
+def get_hebrew_numbers(verse: str) -> List[NumericHebrew]:
+    """
+    Like extract_number_phrases and hebrew_num_to_int, in one go
+    """
+    is_word_and_raw_tokens = tokenize_words_and_punctuations(verse)
+    conj_words = [
+        convert_word_to_conj_word(raw_token) if is_word else ConjWord(raw_token, raw_token)
+        for is_word, raw_token in is_word_and_raw_tokens
+    ]
+
+    numeric_hebrews = []
+    total = 0
+    current_phrase_first_index = None
+    current_phrase_last_index = None
+
+    current_segment = 0
+    segment_parts = []  # track numbers added in the current segment
+
+    def add_number(num, conjugate_letters):
+        nonlocal current_segment, segment_parts
+        if conjugate_letters == [ConjugateLetter.VAV]:
+            current_segment += num
+            segment_parts.append(num)
+        else:
+            if current_segment == 0:
+                current_segment = num
+                segment_parts = [num]
+            else:
+                # Add it (rare case without 'ו'), but let's keep consistency
+                current_segment += num
+                segment_parts.append(num)
+
+    def multiply_last(factor):
+        nonlocal current_segment, segment_parts
+        if not segment_parts:
+            # If no parts, just add factor
+            current_segment += factor
+            segment_parts.append(factor)
+        else:
+            last = segment_parts.pop()
+            new_val = last * factor
+            current_segment = current_segment - last + new_val
+            segment_parts.append(new_val)
+
+    def multiply_all_thus_far(factor):
+        nonlocal current_segment, segment_parts, total
+        # add up all parts and multiply by factor
+        sum_thus_far = sum(segment_parts)
+        if sum_thus_far == 0:
+            if isinstance(total, Time):
+                sum_thus_far = total
+            else:
+                sum_thus_far = max(1, total)
+            if isinstance(total, Time) and isinstance(sum_thus_far, Time):
+                pass
+            else:
+                total = sum_thus_far * factor
+        else:
+            total += sum_thus_far * factor
+        segment_parts = []
+        current_segment = 0
+
+    def reset_phrase():
+        nonlocal current_phrase_first_index, current_phrase_last_index, total, current_segment, segment_parts
+        total = 0
+        current_phrase_first_index = None
+        current_phrase_last_index = None
+        current_segment = 0
+        segment_parts.clear()
+
+    def append_phrase(index: int):
+        nonlocal current_phrase_first_index, current_phrase_last_index, total, current_segment, segment_parts
+        if current_phrase_first_index is None:
+            current_phrase_first_index = index
+            is_first = True
+        else:
+            is_first = False
+        assert current_phrase_last_index is None or current_phrase_last_index + 2 == index
+        current_phrase_last_index = index
+        raw_token, token, conjugate_letters = conj_words[index]
+
+        if is_first and token in SHANA_STARTER:
+            total = Time(0, is_date=True)
+        elif is_first and token in MONTH_STARTER:
+            total = Time(months=0, is_date=True)
+        elif is_first and token in DAY_STARTER:
+            total = Time(days=0, is_date=True)
+        elif token in SHANA_WORDS and not (token == 'שְׁנֵי' and len(segment_parts) == 0):
+            multiply_all_thus_far(Time(1))
+        elif raw_token in TO_MONTH:
+            if not isinstance(total, Time):
+                multiply_all_thus_far(Time(days=1))
+            total.is_date = True
+        elif token in MONTH_WORDS:
+            multiply_all_thus_far(Time(months=1))
+        elif token in DAY_WORDS:
+            multiply_all_thus_far(Time(days=1))
+        elif token in NIGHT_WORDS:
+            multiply_all_thus_far(Time(days=0))
+        elif token in FIXED_MAP:
+            add_number(FIXED_MAP[token], conjugate_letters)
+        elif token in ALL_PLURAL_MAP:
+            value = ALL_PLURAL_MAP[token]
+            if conjugate_letters:
+                current_segment += value
+                segment_parts.append(value)
+            else:
+                if token in HUNDREDS_PLURAL_MAP:
+                    multiply_last(value)
+                else:
+                    multiply_all_thus_far(value)
+
+    def terminate_phrase():
+        nonlocal total, current_segment, current_phrase_first_index, current_phrase_last_index
+        if current_phrase_first_index is None:
+            return
+        total += current_segment
+        if isinstance(total, Time) and total.to_number() > 0 or not isinstance(total, Time) and total > 0:
+            numeric_hebrews.append(NumericHebrew(
+                book='',
+                chapter='',
+                letter='',
+                quote=''.join(conj_word.raw_word
+                               for conj_word in conj_words[current_phrase_first_index:current_phrase_last_index + 1]),
+                number=total,
+                entity='',
+            ))
+        reset_phrase()
+
+    for j in range(0, len(conj_words), 2):
+        current_word = conj_words[j]
+        previous_word = conj_words[j-2] if j-2 >= 0 else ConjWord()
+        next_word = conj_words[j+2] if j+2 < len(conj_words) else ConjWord()
+
+        # Should we terminate the current phrase before adding the current word?
+        if current_word.conjugate_letters not in [[], [ConjugateLetter.VAV]] \
+                and previous_word.word not in STARTER_TIME_WORDS and current_word.raw_word not in TO_MONTH:
+            terminate_phrase()
+        if current_word.word in STARTER_TIME_WORDS and current_word.word not in TIME_WORDS:
+            terminate_phrase()
+
+        if (previous_word.word, current_word.raw_word) in EXCEPTION_BECAUSE_OF_PREVIOUS_WORD \
+                or (previous_word.raw_word, current_word.raw_word) in EXCEPTION_BECAUSE_OF_PREVIOUS_WORD:
+            terminate_phrase()
+        elif (current_word.word, next_word.raw_word) in EXCEPTIONS_BECAUSE_OF_NEXT_WORD:
+            terminate_phrase()
+        elif current_word.word in THE_ONE and current_phrase_first_index is None \
+                and next_word.raw_word not in ["עֶשְׂרֵה", "לַחֹדֶשׁ"] \
+                and next_word.conjugate_letters != [ConjugateLetter.VAV]:
+            append_phrase(j)
+            terminate_phrase()
+        elif (current_word.word in ALL_NUMBER_WORDS | ALL_TIME_WORDS or current_word.raw_word in ALL_NUMBER_WORDS | ALL_TIME_WORDS) and (
+                previous_word.raw_word == current_word.raw_word or current_word.word == 'מֵאָה' and next_word.word not in ALL_TIME_WORDS and
+                current_phrase_first_index is not None and
+                not any(conj_words[t].word in ALL_PLURAL_MAP | COUPLE_MAP for t in range(current_phrase_first_index, j))):
+            # terminate if end of sentence, or for שנים שנים
+            terminate_phrase()
+            append_phrase(j)
+        elif current_word.word in ALL_NUMBER_WORDS:
+            append_phrase(j)
+        elif current_word.word in ALL_TIME_WORDS and current_phrase_first_index is not None or current_word.word in STARTER_TIME_WORDS:
+            append_phrase(j)
+        else:
+            terminate_phrase()
+    terminate_phrase()
+    return numeric_hebrews
 
 
 def tokenize(text: str) -> list[str]:
@@ -299,9 +481,7 @@ def hebrew_num_to_int(phrase: str) -> int:
         current_segment = 0
 
     for j, raw_token in enumerate(tokens):
-        is_last = j + 1 == len(tokens)
         is_first = j == 0
-        next_token = tokens[j + 1] if not is_last else None
         token, conjugate_letters = preprocess_token(raw_token, expected_nouns=ALL_WORDS)
 
         if token not in ALL_NUMBER_WORDS and token not in ALL_TIME_WORDS:
