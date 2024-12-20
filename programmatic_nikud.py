@@ -547,7 +547,9 @@ def is_word_in_hebrew_numbers(word: str) -> bool:
 
 
 def is_numbers_in_verse(verse) -> bool:
-    return any(is_word_in_hebrew_numbers(word) for word in verse.split(' '))
+    is_word_and_token = tokenize_words_and_punctuations(verse)
+    words = [word for is_word, word in is_word_and_token if is_word]
+    return any(is_word_in_hebrew_numbers(word) for word in words)
 
 
 def extract_number_phrases(verse: str) -> list[str]:
@@ -621,9 +623,9 @@ def extract_number_phrases(verse: str) -> list[str]:
     return phrases
 
 
-def get_verses_with_numbers():
+def get_verses_with_numbers(with_nikud: bool = True, remove_punctuations: bool = True) -> list[str]:
     verses = []
-    for verse in get_bible(with_nikud=True, remove_punctuations=True):
+    for verse in get_bible(with_nikud=with_nikud, remove_punctuations=remove_punctuations):
         if is_numbers_in_verse(verse.text):
             verses.append(verse)
 

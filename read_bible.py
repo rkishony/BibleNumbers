@@ -50,6 +50,8 @@ def get_book_from_html(html_content: str, remove_punctuations: bool = True) -> V
             verse_text = bold_element.find_next_sibling(string=True)
             if remove_punctuations:
                 verse_text = clean_text(verse_text)
+            else:
+                verse_text = verse_text.strip()
             verses.append(Verse(book_name, chapter_number, verse_number, verse_text))
 
     return verses

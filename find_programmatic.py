@@ -32,7 +32,7 @@ def _converrt_to_number(x):
 
 
 def main():
-    verses = get_verses_with_numbers()
+    verses = get_verses_with_numbers(with_nikud=True, remove_punctuations=False)
     verses_to_matches = {}
     for verse in verses:
         # numeric_hebrews = extract_numeric_hebrews(verse)
