@@ -139,31 +139,25 @@ HUNDREDS_PLURAL_MAP = {
     'מֵאֹת': 100,
 }
 
-THOUSANDS_MAP = {
+PLURAL_MAP = {
+    'שָׁבֻעִים': 7,
+    'עֲשָׂרֹת': 10,
     'אֶלֶף': 1000,
     'אָלֶף': 1000,
-}
-
-TENTHOUSANDS_MAP = {
-    'רְבָבָה': 10000,
-    'רִבּוֹא': 10000
-}
-
-PLURAL_MAP = {
     'אֲלָפִים': 1000,
     'אלפים': 1000,
     'אַלְפֵי': 1000,
     'רְבָבוֹת': 10000,
     'רִבְבוֹת': 10000,
-    'שָׁבֻעִים': 7,
-    'עֲשָׂרֹת': 10,
+    'רְבָבָה': 10000,
+    'רִבּוֹא': 10000
 }
 
-ALL_PLURAL_MAP = PLURAL_MAP | TENTHOUSANDS_MAP | THOUSANDS_MAP | HUNDREDS_PLURAL_MAP
+ALL_PLURAL_MAP = PLURAL_MAP | HUNDREDS_PLURAL_MAP
 
 ALL_NUMBER_WORDS = set(FIXED_MAP) | set(HUNDREDS_MAP) | set(ALL_PLURAL_MAP)
 
-
+# Time words
 SHANA_WORDS = {"שָׁנָה", "שָׁנָה", "שְׁנוֹת", "שָׁנִים", "שְׁנֵי", "הַשָּׁנִים"}
 SHANA_STARTER = {"בַשָּׁנָה", "בִּשְׁנַת", "בַּשָּׁנָה", "שְׁנַת"}
 MONTH_WORDS = {"לַחֹדֶשׁ", "לְחֹדֶשׁ", "חֹדֶשׁ", "חֳדָשִׁים", "לַחֹדֶשׁ"}
@@ -180,8 +174,6 @@ for word in ALL_NUMBER_WORDS | ALL_TIME_WORDS:
     if word not in BIBLE:
         print(f"Word not found in Bible: {word}")
 
-
-EXCEPTIONS = ['האחת']
 
 EXCEPTION_BECAUSE_OF_PREVIOUS_WORD = [
     ('שָׁנִי', 'וְשֵׁשׁ'),
@@ -210,10 +202,9 @@ THE_ONE = [
     'אַחַת', 'אֶחָד'
 ]
 
+ALL_EXCEPTION_WORDS = set(w for w, _ in EXCEPTION_BECAUSE_OF_PREVIOUS_WORD) | set(w for _, w in EXCEPTIONS_BECAUSE_OF_NEXT_WORD)
 
-ALL_WORDS = ALL_NUMBER_WORDS | ALL_TIME_WORDS \
-            | set(w for w, _ in EXCEPTION_BECAUSE_OF_PREVIOUS_WORD) \
-            | set(w for _, w in EXCEPTIONS_BECAUSE_OF_NEXT_WORD)
+ALL_WORDS = ALL_NUMBER_WORDS | ALL_TIME_WORDS | ALL_EXCEPTION_WORDS
 
 class ConjugateLetter(Enum):
     """Conjugate letters with their forms for numbers and grammar."""
@@ -418,9 +409,7 @@ def extract_number_phrases(verse: str) -> list[str]:
             terminate_phrase()
         if raw_token in STARTER_TIME_WORDS and raw_token not in TIME_WORDS:
             terminate_phrase()
-        if raw_token in EXCEPTIONS:
-            terminate_phrase()
-        elif (prev_token, raw_token) in EXCEPTION_BECAUSE_OF_PREVIOUS_WORD \
+        if (prev_token, raw_token) in EXCEPTION_BECAUSE_OF_PREVIOUS_WORD \
                 or (prev_raw_token, raw_token) in EXCEPTION_BECAUSE_OF_PREVIOUS_WORD:
             terminate_phrase()
         elif (raw_token, next_raw_token) in EXCEPTIONS_BECAUSE_OF_NEXT_WORD:
