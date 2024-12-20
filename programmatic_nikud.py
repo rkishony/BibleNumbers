@@ -299,7 +299,10 @@ def hebrew_num_to_int(phrase: str) -> int:
                 sum_thus_far = total
             else:
                 sum_thus_far = max(1, total)
-            total = sum_thus_far * factor
+            if isinstance(total, Time) and isinstance(sum_thus_far, Time):
+                pass
+            else:
+                total = sum_thus_far * factor
         else:
             total += sum_thus_far * factor
         segment_parts = []
