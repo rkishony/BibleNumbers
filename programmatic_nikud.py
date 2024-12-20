@@ -390,7 +390,14 @@ def get_hebrew_numbers(verse: str) -> List[NumericHebrew]:
         if current_word.conjugate_letters not in [[], [ConjugateLetter.VAV]] \
                 and previous_word.word not in STARTER_TIME_WORDS and current_word.raw_word not in TO_MONTH:
             terminate_phrase()
-        if current_word.word in STARTER_TIME_WORDS and current_word.word not in TIME_WORDS:
+        elif current_word.word in STARTER_TIME_WORDS and current_word.word not in TIME_WORDS:
+            terminate_phrase()
+        elif previous_word.raw_word == current_word.raw_word:
+            terminate_phrase()
+        elif current_word.word == 'מֵאָה' and next_word.word not in ALL_TIME_WORDS \
+            and current_phrase_first_index is not None \
+                and not any(
+            conj_words[t].word in ALL_PLURAL_MAP | COUPLE_MAP for t in range(current_phrase_first_index, j)):
             terminate_phrase()
 
         if (previous_word.word, current_word.raw_word) in EXCEPTION_BECAUSE_OF_PREVIOUS_WORD \
@@ -403,13 +410,6 @@ def get_hebrew_numbers(verse: str) -> List[NumericHebrew]:
                 and next_word.conjugate_letters != [ConjugateLetter.VAV]:
             append_phrase(j)
             terminate_phrase()
-        elif (current_word.word in ALL_NUMBER_WORDS | ALL_TIME_WORDS or current_word.raw_word in ALL_NUMBER_WORDS | ALL_TIME_WORDS) and (
-                previous_word.raw_word == current_word.raw_word or current_word.word == 'מֵאָה' and next_word.word not in ALL_TIME_WORDS and
-                current_phrase_first_index is not None and
-                not any(conj_words[t].word in ALL_PLURAL_MAP | COUPLE_MAP for t in range(current_phrase_first_index, j))):
-            # terminate if end of sentence, or for שנים שנים
-            terminate_phrase()
-            append_phrase(j)
         elif current_word.word in ALL_NUMBER_WORDS:
             append_phrase(j)
         elif current_word.word in ALL_TIME_WORDS and current_phrase_first_index is not None or current_word.word in STARTER_TIME_WORDS:
