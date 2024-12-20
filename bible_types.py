@@ -228,6 +228,8 @@ class Time:
         return self._apply_operation(other, operator.sub)
 
     def __mul__(self, other):
+        if isinstance(other, Time):
+            raise ValueError("Multiplication of two Time objects is not supported")
         return Time(self.years * other if self.years is not None else None,
                     self.months * other if self.months is not None else None,
                     self.days * other if self.days is not None else None,
@@ -241,3 +243,18 @@ class Time:
         other = self._convert_to_time(other)
         return self.years == other.years and self.months == other.months and self.days == other.days and self.is_date == other.is_date
 
+    def to_number(self, in_days=False):
+        total_days = 0
+        if self.years:
+            total_days += self.years * 365
+        if self.months:
+            total_days += self.months * 30
+        if self.days:
+            total_days += self.days
+        if in_days:
+            return total_days
+        if self.years:
+            return total_days / 365
+        if self.months:
+            return total_days / 30
+        return total_days
