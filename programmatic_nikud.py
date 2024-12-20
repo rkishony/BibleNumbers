@@ -165,12 +165,12 @@ LARGER_THAN_100_MAP = THOUSANDS_MAP | TENTHOUSANDS_MAP | PLURAL_MAP
 ALL_NUMBER_WORDS = set(FIXED_MAP) | set(HUNDREDS_MAP) | set(ALL_PLURAL_MAP)
 
 
-SHANA_WORDS = {"שָׁנָה", "שָׁנָה", "שְׁנוֹת", "שָׁנִים", "שְׁנֵי"}
+SHANA_WORDS = {"שָׁנָה", "שָׁנָה", "שְׁנוֹת", "שָׁנִים", "שְׁנֵי", "הַשָּׁנִים"}
 SHANA_STARTER = {"בַשָּׁנָה", "בִּשְׁנַת", "בַּשָּׁנָה", "שְׁנַת"}
 MONTH_WORDS = {"לַחֹדֶשׁ", "לְחֹדֶשׁ", "חֹדֶשׁ", "חֳדָשִׁים", "לַחֹדֶשׁ"}
 MONTH_STARTER = {"בַּחֹדֶשׁ", "הַחֹדֶשׁ", "וּבַחֹדֶשׁ"}
 DAY_WORDS = {'יָמִים', 'יוֹם', 'הַיָּמִים'}
-DAY_STARTER = {'בַּיּוֹם', 'יוֹם'}
+DAY_STARTER = {'בַּיּוֹם', 'יוֹם', 'וּבַיּוֹם'}
 NIGHT_WORDS = {'לַיְלָה', 'לָיְלָה', 'לֵיל', 'לֵילוֹת'}
 TIME_WORDS = SHANA_WORDS | MONTH_WORDS | DAY_WORDS | NIGHT_WORDS
 STARTER_TIME_WORDS = SHANA_STARTER | MONTH_STARTER | DAY_STARTER
