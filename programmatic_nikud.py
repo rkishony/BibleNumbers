@@ -1,6 +1,6 @@
 import re
 from enum import Enum
-from typing import Optional, Iterable, List
+from typing import Iterable, List
 
 from bible_types import Time
 from read_bible import get_bible, get_bible_as_one_text
@@ -377,7 +377,7 @@ def iter_hebrew_numbers(with_hatayot: bool = True):
 
 
 def is_word_in_hebrew_numbers(word: str) -> bool:
-    return word in iter_hebrew_numbers() or preprocess_token(word)[0] in iter_hebrew_numbers()
+    return word in iter_hebrew_numbers() or preprocess_token(word, expected_nouns=ALL_WORDS)[0] in iter_hebrew_numbers()
 
 
 def is_numbers_in_verse(verse) -> bool:

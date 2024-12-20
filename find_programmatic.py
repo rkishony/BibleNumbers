@@ -10,7 +10,6 @@ def extract_numeric_hebrews(verse) -> List[NumericHebrew]:
     numeric_hebrews = []
     for phrase in number_phrases:
         number = hebrew_num_to_int(phrase)
-        print(phrase, number)
         numeric_hebrews.append(NumericHebrew(
             book=verse.book,
             chapter=verse.chapter,

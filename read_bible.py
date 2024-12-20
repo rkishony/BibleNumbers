@@ -82,6 +82,7 @@ def find_all_verses_containing(phrase: str, with_nikud: bool = False, remove_pun
     return [verse for verse in verses if phrase in verse.text]
 
 
-s = "עֲשָׂרֹת"
-for v in find_all_verses_containing(s, with_nikud=True, remove_punctuations=False):
-    print(v.text)
+if __name__ == "__main__":
+    s = "עֲשָׂרֹת"
+    for v in find_all_verses_containing(s, with_nikud=True, remove_punctuations=False):
+        print(v.text)
