@@ -1,7 +1,7 @@
 import pytest
 
 from bible_types import Time
-from programmatic_nikud import preprocess_token, get_hebrew_numbers
+from programmatic_nikud import preprocess_token, GetHebrewNumbers
 
 
 def test_preprocess_token():
@@ -50,7 +50,7 @@ def test_hebrew_num_to_int(hebrew, expected):
     print()
     print(hebrew)
     print(expected)
-    hebrew_numbers = get_hebrew_numbers(hebrew)
+    hebrew_numbers = GetHebrewNumbers(hebrew).get()
     assert hebrew_numbers[0].number == expected
 
 
@@ -248,7 +248,7 @@ def test_extract_number_phrases(verse, expected):
     print(verse)
     print(expected)
 
-    hebrew_numbers = get_hebrew_numbers(verse)
+    hebrew_numbers = GetHebrewNumbers(verse).get()
     phrases_and_numbers = [(hebrew_number.quote, hebrew_number.number) for hebrew_number in hebrew_numbers]
 
     print(phrases_and_numbers)

@@ -1,6 +1,7 @@
 import re
+from dataclasses import dataclass, field
 from enum import Enum
-from typing import Iterable, List, NamedTuple
+from typing import Iterable, List, NamedTuple, Union, Optional
 
 from bible_types import Time, NumericHebrew
 from bible_utils import tokenize_words_and_punctuations
@@ -254,172 +255,172 @@ class ConjWord(NamedTuple):
         return cls(raw_word, word, conjugate_letters)
 
 
-def get_hebrew_numbers(verse: str) -> List[NumericHebrew]:
-    """
-    Like extract_number_phrases and hebrew_num_to_int, in one go
-    """
-    is_word_and_raw_tokens = tokenize_words_and_punctuations(verse)
-    conj_words = [
-        ConjWord.from_raw_word(raw_token) if is_word else ConjWord(raw_token, raw_token)
-        for is_word, raw_token in is_word_and_raw_tokens
-    ]
+@dataclass
+class GetHebrewNumbers:
+    verse: str
 
-    numeric_hebrews = []
-    total = 0
-    current_phrase_first_index = None
-    current_phrase_last_index = None
+    numeric_hebrews: List[NumericHebrew] = field(default_factory=list)
+    total: Union[int, float, Time] = 0
+    current_phrase_first_index: Optional[int] = None
+    current_phrase_last_index: Optional[int] = None
 
-    current_segment = 0
-    segment_parts = []  # track numbers added in the current segment
+    current_segment: Union[int, float] = 0
+    segment_parts: List[Union[int, float]] = field(default_factory=list)
 
-    def add_number(num, conjugate_letters):
-        nonlocal current_segment, segment_parts
+    conj_words: List[ConjWord] = None
+
+    def _tokenze(self):
+        is_word_and_raw_tokens = tokenize_words_and_punctuations(self.verse)
+        self.conj_words = [
+            ConjWord.from_raw_word(raw_token) if is_word else ConjWord(raw_token, raw_token)
+            for is_word, raw_token in is_word_and_raw_tokens
+        ]
+
+    def add_number(self, num, conjugate_letters):
         if conjugate_letters == [ConjugateLetter.VAV]:
-            current_segment += num
-            segment_parts.append(num)
+            self.current_segment += num
+            self.segment_parts.append(num)
         else:
-            if current_segment == 0:
-                current_segment = num
-                segment_parts = [num]
+            if self.current_segment == 0:
+                self.current_segment = num
+                self.segment_parts = [num]
             else:
                 # Add it (rare case without 'ו'), but let's keep consistency
-                current_segment += num
-                segment_parts.append(num)
+                self.current_segment += num
+                self.segment_parts.append(num)
 
-    def multiply_last(factor):
-        nonlocal current_segment, segment_parts
-        if not segment_parts:
+    def multiply_last(self, factor):
+        if not self.segment_parts:
             # If no parts, just add factor
-            current_segment += factor
-            segment_parts.append(factor)
+            self.current_segment += factor
+            self.segment_parts.append(factor)
         else:
-            last = segment_parts.pop()
+            last = self.segment_parts.pop()
             new_val = last * factor
-            current_segment = current_segment - last + new_val
-            segment_parts.append(new_val)
+            self.current_segment = self.current_segment - last + new_val
+            self.segment_parts.append(new_val)
 
-    def multiply_all_thus_far(factor):
-        nonlocal current_segment, segment_parts, total
+    def multiply_all_thus_far(self, factor):
         # add up all parts and multiply by factor
-        sum_thus_far = sum(segment_parts)
+        sum_thus_far = sum(self.segment_parts)
         if sum_thus_far == 0:
-            if isinstance(total, Time):
-                sum_thus_far = total
+            if isinstance(self.total, Time):
+                sum_thus_far = self.total
             else:
-                sum_thus_far = max(1, total)
-            if isinstance(total, Time) and isinstance(sum_thus_far, Time):
+                sum_thus_far = max(1, self.total)
+            if isinstance(self.total, Time) and isinstance(sum_thus_far, Time):
                 pass
             else:
-                total = sum_thus_far * factor
+                self.total = sum_thus_far * factor
         else:
-            total += sum_thus_far * factor
-        segment_parts = []
-        current_segment = 0
+            self.total += sum_thus_far * factor
+        self.segment_parts = []
+        self.current_segment = 0
 
-    def reset_phrase():
-        nonlocal current_phrase_first_index, current_phrase_last_index, total, current_segment, segment_parts
-        total = 0
-        current_phrase_first_index = None
-        current_phrase_last_index = None
-        current_segment = 0
-        segment_parts.clear()
+    def reset_phrase(self):
+        self.total = 0
+        self.current_phrase_first_index = None
+        self.current_phrase_last_index = None
+        self.current_segment = 0
+        self.segment_parts.clear()
 
-    def append_phrase(index: int):
-        nonlocal current_phrase_first_index, current_phrase_last_index, total, current_segment, segment_parts
-        if current_phrase_first_index is None:
-            current_phrase_first_index = index
+    def append_phrase(self, index: int):
+        if self.current_phrase_first_index is None:
+            self.current_phrase_first_index = index
             is_first = True
         else:
             is_first = False
-        assert current_phrase_last_index is None or current_phrase_last_index + 2 == index
-        current_phrase_last_index = index
-        raw_token, token, conjugate_letters = conj_words[index]
+        assert self.current_phrase_last_index is None or self.current_phrase_last_index + 2 == index
+        self.current_phrase_last_index = index
+        raw_token, token, conjugate_letters = self.conj_words[index]
 
         if is_first and token in SHANA_STARTER:
-            total = Time(0, is_date=True)
+            self.total = Time(0, is_date=True)
         elif is_first and token in MONTH_STARTER:
-            total = Time(months=0, is_date=True)
+            self.total = Time(months=0, is_date=True)
         elif is_first and token in DAY_STARTER:
-            total = Time(days=0, is_date=True)
-        elif token in SHANA_WORDS and not (token == 'שְׁנֵי' and len(segment_parts) == 0):
-            multiply_all_thus_far(Time(1))
+            self.total = Time(days=0, is_date=True)
+        elif token in SHANA_WORDS and not (token == 'שְׁנֵי' and len(self.segment_parts) == 0):
+            self.multiply_all_thus_far(Time(1))
         elif raw_token in TO_MONTH:
-            if not isinstance(total, Time):
-                multiply_all_thus_far(Time(days=1))
-            total.is_date = True
+            if not isinstance(self.total, Time):
+                self.multiply_all_thus_far(Time(days=1))
+            self.total.is_date = True
         elif token in MONTH_WORDS:
-            multiply_all_thus_far(Time(months=1))
+            self.multiply_all_thus_far(Time(months=1))
         elif token in DAY_WORDS:
-            multiply_all_thus_far(Time(days=1))
+            self.multiply_all_thus_far(Time(days=1))
         elif token in NIGHT_WORDS:
-            multiply_all_thus_far(Time(days=0))
+            self.multiply_all_thus_far(Time(days=0))
         elif token in FIXED_MAP:
-            add_number(FIXED_MAP[token], conjugate_letters)
+            self.add_number(FIXED_MAP[token], conjugate_letters)
         elif token in ALL_PLURAL_MAP:
             value = ALL_PLURAL_MAP[token]
             if conjugate_letters:
-                current_segment += value
-                segment_parts.append(value)
+                self.current_segment += value
+                self.segment_parts.append(value)
             else:
                 if token in HUNDREDS_PLURAL_MAP:
-                    multiply_last(value)
+                    self.multiply_last(value)
                 else:
-                    multiply_all_thus_far(value)
+                    self.multiply_all_thus_far(value)
 
-    def terminate_phrase():
-        nonlocal total, current_segment, current_phrase_first_index, current_phrase_last_index
-        if current_phrase_first_index is None:
+    def terminate_phrase(self):
+        if self.current_phrase_first_index is None:
             return
-        total += current_segment
-        if isinstance(total, Time) and total.to_number() > 0 or not isinstance(total, Time) and total > 0:
-            numeric_hebrews.append(NumericHebrew(
+        self.total += self.current_segment
+        if isinstance(self.total, Time) and self.total.to_number() > 0 or not isinstance(self.total, Time) and self.total > 0:
+            self.numeric_hebrews.append(NumericHebrew(
                 book='',
                 chapter='',
                 letter='',
                 quote=''.join(conj_word.raw_word
-                               for conj_word in conj_words[current_phrase_first_index:current_phrase_last_index + 1]),
-                number=total,
+                               for conj_word in self.conj_words[self.current_phrase_first_index:self.current_phrase_last_index + 1]),
+                number=self.total,
                 entity='',
             ))
-        reset_phrase()
+        self.reset_phrase()
 
-    for j in range(0, len(conj_words), 2):
-        current_word = conj_words[j]
-        previous_word = conj_words[j-2] if j-2 >= 0 else ConjWord()
-        next_word = conj_words[j+2] if j+2 < len(conj_words) else ConjWord()
+    def get(self):
+        self._tokenze()
+        conj_words = self.conj_words
+        for j in range(0, len(conj_words), 2):
+            current_word = conj_words[j]
+            previous_word = conj_words[j-2] if j-2 >= 0 else ConjWord()
+            next_word = conj_words[j+2] if j+2 < len(conj_words) else ConjWord()
 
-        # Should we terminate the current phrase before adding the current word?
-        if current_word.conjugate_letters not in [[], [ConjugateLetter.VAV]] \
-                and previous_word.word not in STARTER_TIME_WORDS and current_word.raw_word not in TO_MONTH:
-            terminate_phrase()
-        elif current_word.word in STARTER_TIME_WORDS and current_word.word not in TIME_WORDS:
-            terminate_phrase()
-        elif previous_word.raw_word == current_word.raw_word:
-            terminate_phrase()
-        elif current_word.raw_word == 'מֵאָה' and next_word.word not in ALL_TIME_WORDS \
-            and current_phrase_first_index is not None \
-                and not any(
-            conj_words[t].word in ALL_PLURAL_MAP | COUPLE_MAP for t in range(current_phrase_first_index, j)):
-            terminate_phrase()
+            # Should we terminate the current phrase before adding the current word?
+            if current_word.conjugate_letters not in [[], [ConjugateLetter.VAV]] \
+                    and previous_word.word not in STARTER_TIME_WORDS and current_word.raw_word not in TO_MONTH:
+                self.terminate_phrase()
+            elif current_word.word in STARTER_TIME_WORDS and current_word.word not in TIME_WORDS:
+                self.terminate_phrase()
+            elif previous_word.raw_word == current_word.raw_word:
+                self.terminate_phrase()
+            elif current_word.raw_word == 'מֵאָה' and next_word.word not in ALL_TIME_WORDS \
+                and self.current_phrase_first_index is not None \
+                    and not any(
+                conj_words[t].word in ALL_PLURAL_MAP | COUPLE_MAP for t in range(self.current_phrase_first_index, j)):
+                self.terminate_phrase()
 
-        if (previous_word.word, current_word.raw_word) in EXCEPTION_BECAUSE_OF_PREVIOUS_WORD \
-                or (previous_word.raw_word, current_word.raw_word) in EXCEPTION_BECAUSE_OF_PREVIOUS_WORD:
-            terminate_phrase()
-        elif (current_word.word, next_word.raw_word) in EXCEPTIONS_BECAUSE_OF_NEXT_WORD:
-            terminate_phrase()
-        elif current_word.word in THE_ONE and current_phrase_first_index is None \
-                and next_word.raw_word not in ["עֶשְׂרֵה", "לַחֹדֶשׁ"] \
-                and next_word.conjugate_letters != [ConjugateLetter.VAV]:
-            append_phrase(j)
-            terminate_phrase()
-        elif current_word.word in ALL_NUMBER_WORDS:
-            append_phrase(j)
-        elif current_word.word in ALL_TIME_WORDS and current_phrase_first_index is not None or current_word.word in STARTER_TIME_WORDS:
-            append_phrase(j)
-        else:
-            terminate_phrase()
-    terminate_phrase()
-    return numeric_hebrews
+            if (previous_word.word, current_word.raw_word) in EXCEPTION_BECAUSE_OF_PREVIOUS_WORD \
+                    or (previous_word.raw_word, current_word.raw_word) in EXCEPTION_BECAUSE_OF_PREVIOUS_WORD:
+                self.terminate_phrase()
+            elif (current_word.word, next_word.raw_word) in EXCEPTIONS_BECAUSE_OF_NEXT_WORD:
+                self.terminate_phrase()
+            elif current_word.word in THE_ONE and self.current_phrase_first_index is None \
+                    and next_word.raw_word not in ["עֶשְׂרֵה", "לַחֹדֶשׁ"] \
+                    and next_word.conjugate_letters != [ConjugateLetter.VAV]:
+                self.append_phrase(j)
+                self.terminate_phrase()
+            elif current_word.word in ALL_NUMBER_WORDS:
+                self.append_phrase(j)
+            elif current_word.word in ALL_TIME_WORDS and self.current_phrase_first_index is not None or current_word.word in STARTER_TIME_WORDS:
+                self.append_phrase(j)
+            else:
+                self.terminate_phrase()
+        self.terminate_phrase()
+        return self.numeric_hebrews
 
 
 def iter_hebrew_numbers(with_hatayot: bool = True):
@@ -437,7 +438,7 @@ def is_numbers_in_verse(verse) -> bool:
     return any(is_word_in_hebrew_numbers(word) for word in words)
 
 
-def get_verses_with_numbers(with_nikud: bool = True, remove_punctuations: bool = True) -> list[str]:
+def get_verses_with_numbers(with_nikud: bool = True, remove_punctuations: bool = True) -> list:
     verses = []
     for verse in get_bible(with_nikud=with_nikud, remove_punctuations=remove_punctuations):
         if is_numbers_in_verse(verse.text):

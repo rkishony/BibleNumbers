@@ -2,7 +2,7 @@ from matplotlib import pyplot as plt
 
 from bible_types import VerseAndNumericHebrews, Time
 from create_verses_html import create_html_of_verses_with_numbers, create_text_of_verses_with_numbers
-from programmatic_nikud import get_verses_with_numbers, get_hebrew_numbers
+from programmatic_nikud import get_verses_with_numbers, GetHebrewNumbers
 
 
 def _converrt_to_number(x):
@@ -19,7 +19,7 @@ def main():
     verses_to_matches = {}
     for verse in verses:
         # numeric_hebrews = extract_numeric_hebrews(verse)
-        numeric_hebrews = get_hebrew_numbers(verse.text)
+        numeric_hebrews = GetHebrewNumbers(verse.text).get()
         verses_to_matches[verse] = numeric_hebrews
 
     # dump_verses_to_numerics('verses_to_numerics_p.json', verses_to_matches)
