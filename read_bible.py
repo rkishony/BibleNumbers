@@ -34,6 +34,10 @@ def clean_text(s):
     return cleaned_string
 
 
+CLEAN_TEXT = {
+    ' חמש (  )'
+}
+
 def get_book_from_html(html_content: str, remove_punctuations: bool = True) -> Verses:
     soup = BeautifulSoup(html_content, "html.parser")
     book_name = soup.find("h1").get_text(strip=True)
@@ -48,6 +52,10 @@ def get_book_from_html(html_content: str, remove_punctuations: bool = True) -> V
             chapter_and_verse = bold_element.get_text(strip=True)
             chapter_number, verse_number = chapter_and_verse.split(",")
             verse_text = bold_element.find_next_sibling(string=True)
+
+            for s in CLEAN_TEXT:
+                verse_text = verse_text.replace(s, '')
+
             if remove_punctuations:
                 verse_text = clean_text(verse_text)
             else:
