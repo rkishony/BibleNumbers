@@ -341,16 +341,24 @@ class GetHebrewNumbers:
 
         last_index_of_previous_phrase = \
             self.numeric_hebrews_indices_and_total[-1][1] if self.numeric_hebrews_indices_and_total else -1
-
+        can_add_previous = last_index_of_previous_phrase < self.current_phrase_first_index - 2
+        preceding_conj_word = self.conj_words[self.current_phrase_first_index - 2] if self.current_phrase_first_index - 2 >= 0 else ConjWord()
+        following_conj_word = self.conj_words[self.current_phrase_last_index + 2] if self.current_phrase_last_index + 2 < len(self.conj_words) else ConjWord()
         if not isinstance(self.total, Time):
-            if self.current_phrase_first_index - 2 >= 0 and self.conj_words[self.current_phrase_first_index - 2].word in DAY_WORDS:
+            if preceding_conj_word.word in DAY_WORDS:
                 self.total = Time(days=self.total)
-                if last_index_of_previous_phrase < self.current_phrase_first_index - 2:
+                if can_add_previous:
                     self.current_phrase_first_index -= 2
-            elif self.current_phrase_first_index - 2 >= 0 and self.conj_words[self.current_phrase_first_index - 2].word in MONTH_WORDS:
+            elif preceding_conj_word.word in MONTH_WORDS:
                 self.total = Time(months=self.total, is_date=True)
-                if last_index_of_previous_phrase < self.current_phrase_first_index - 2:
+                if can_add_previous:
                     self.current_phrase_first_index -= 2
+        if not isinstance(self.total, Time) or self.total.is_day_only() and not self.total.is_date:
+            if following_conj_word.raw_word in TO_MONTH | {"בַּחֹדֶשׁ"}:
+                if isinstance(self.total, Time):
+                    self.total.is_date = True
+                else:
+                    self.total = Time(days=self.total, is_date=True)
 
         if isinstance(self.total, Time) and self.total.to_number() > 0 or not isinstance(self.total, Time) and self.total > 0:
             self.numeric_hebrews_indices_and_total.append(
