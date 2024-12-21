@@ -176,7 +176,7 @@ class Time:
             if self._is_day_only():
                 return f"יום מספר {self.days}"
             if self._is_month_only():
-                return f"חודש מספר{self.months}"
+                return f"חודש מספר {self.months}"
             if self._is_year_only():
                 return f"שנה מספר {self.years}"
             raise ValueError("Invalid date")
