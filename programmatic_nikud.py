@@ -284,6 +284,11 @@ class GetHebrewNumbers:
         ]
 
     def add_number(self, index, num):
+        for power in [1, 10, 100]:
+            if power <= num < power * 10:
+                if any(power <= n < power * 10 for n in self.segment_parts):
+                    print(f"Warning: {num} is not a valid number")
+                    print(self.verse)
         self.segment_parts.append(num)
         self._append_phrase(index)
 
@@ -370,7 +375,8 @@ class GetHebrewNumbers:
                 self.terminate_phrase()
             elif word in THE_ONE and self.is_first \
                     and next_conj_word.raw_word not in ["עֶשְׂרֵה", "לַחֹדֶשׁ"] \
-                    and next_conj_word.conjugate_letters != [ConjugateLetter.VAV]:
+                    and (conjugate_letters == [ConjugateLetter.HEY] or
+                    next_conj_word.conjugate_letters != [ConjugateLetter.VAV]):
                 self.add_number(j, 1)
                 self.terminate_phrase()
             elif word in ALL_TIME_WORDS and not self.is_first or word in STARTER_TIME_WORDS:
