@@ -322,6 +322,8 @@ class GetHebrewNumbers:
         self.segment_parts.clear()
 
     def _append_phrase(self, index: int):
+        if index is None:
+            return
         if self.current_phrase_first_index is None:
             self.current_phrase_first_index = index
         assert self.current_phrase_last_index is None or self.current_phrase_last_index + 2 == index
@@ -403,6 +405,9 @@ class GetHebrewNumbers:
                 else:
                     self.terminate_phrase()
             elif word in FIXED_MAP:
+                if self.is_first:
+                    if previous_conj_word.word in ["לַחֹדֶשׁ"] and conjugate_letters == [ConjugateLetter.HEY]:
+                        self.multiply_all_thus_far(None, Time(months=0, is_date=True))
                 if next_conj_word.word in HUNDREDS_PLURAL_MAP:
                     self.add_number(j, FIXED_MAP[word] * 100)
                     j += 2
