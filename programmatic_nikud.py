@@ -339,31 +339,41 @@ class GetHebrewNumbers:
 
         self.total += self.segment_sum
 
-        last_index_of_previous_phrase = \
-            self.numeric_hebrews_indices_and_total[-1][1] if self.numeric_hebrews_indices_and_total else -1
-        can_add_previous = last_index_of_previous_phrase < self.current_phrase_first_index - 2
-        preceding_conj_word = self.conj_words[self.current_phrase_first_index - 2] if self.current_phrase_first_index - 2 >= 0 else ConjWord()
-        following_conj_word = self.conj_words[self.current_phrase_last_index + 2] if self.current_phrase_last_index + 2 < len(self.conj_words) else ConjWord()
-        if not isinstance(self.total, Time):
-            if preceding_conj_word.word in DAY_WORDS:
-                self.total = Time(days=self.total)
-                if can_add_previous:
-                    self.current_phrase_first_index -= 2
-            elif preceding_conj_word.word in MONTH_WORDS:
-                self.total = Time(months=self.total, is_date=True)
-                if can_add_previous:
-                    self.current_phrase_first_index -= 2
-        if not isinstance(self.total, Time) or self.total.is_day_only() and not self.total.is_date:
-            if following_conj_word.raw_word in TO_MONTH | {"בַּחֹדֶשׁ"}:
-                if isinstance(self.total, Time):
-                    self.total.is_date = True
-                else:
-                    self.total = Time(days=self.total, is_date=True)
-
         if isinstance(self.total, Time) and self.total.to_number() > 0 or not isinstance(self.total, Time) and self.total > 0:
             self.numeric_hebrews_indices_and_total.append(
                 (self.current_phrase_first_index, self.current_phrase_last_index, self.total))
         self.reset_phrase()
+
+    def _adjust_dates_retroactively(self):
+        new_numeric_hebrews_indices_and_total = []
+        for i, (start, end, total) in enumerate(self.numeric_hebrews_indices_and_total):
+            last_index_of_previous_phrase = \
+                self.numeric_hebrews_indices_and_total[i - 1][1] if i > 0 else -1
+            can_add_previous = last_index_of_previous_phrase < start - 2
+            fist_index_of_next_phrase = \
+                self.numeric_hebrews_indices_and_total[i + 1][0] if i + 1 < len(self.numeric_hebrews_indices_and_total) else len(self.conj_words)
+            can_add_next = end + 2 < fist_index_of_next_phrase
+            preceding_conj_word = self.conj_words[start - 2] if start - 2 >= 0 else ConjWord()
+            following_conj_word = self.conj_words[end + 2] if end + 2 < len(self.conj_words) else ConjWord()
+            if not isinstance(total, Time):
+                if preceding_conj_word.word in DAY_WORDS:
+                    total = Time(days=total)
+                    if can_add_previous:
+                        start -= 2
+                elif preceding_conj_word.word in MONTH_WORDS:
+                    total = Time(months=total, is_date=True)
+                    if can_add_previous:
+                        start -= 2
+            if not isinstance(total, Time) or total.is_day_only() and not total.is_date:
+                if following_conj_word.raw_word in TO_MONTH | {"בַּחֹדֶשׁ"}:
+                    if isinstance(total, Time):
+                        total.is_date = True
+                    else:
+                        total = Time(days=total, is_date=True)
+                    # if can_add_next:
+                    #     end += 2
+            new_numeric_hebrews_indices_and_total.append((start, end, total))
+        self.numeric_hebrews_indices_and_total = new_numeric_hebrews_indices_and_total
 
     def get(self):
         self._tokenze()
@@ -440,6 +450,7 @@ class GetHebrewNumbers:
             else:
                 self.terminate_phrase()
         self.terminate_phrase()
+        self._adjust_dates_retroactively()
         return self._get_numeric_hebrew()
 
     def _get_numeric_hebrew(self):
