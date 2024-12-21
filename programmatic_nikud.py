@@ -279,36 +279,25 @@ class GetHebrewNumbers:
             for is_word, raw_token in is_word_and_raw_tokens
         ]
 
-    def add_number(self, num, conjugate_letters):
-        if conjugate_letters == [ConjugateLetter.VAV]:
-            self.segment_parts.append(num)
-        else:
-            if self.segment_sum == 0:
-                self.segment_parts = [num]
-            else:
-                # Add it (rare case without 'ו'), but let's keep consistency
-                self.segment_parts.append(num)
+    def add_number(self, num):
+        self.segment_parts.append(num)
 
     def multiply_last(self, factor):
         if not self.segment_parts:
             # If no parts, just add factor
             self.segment_parts.append(factor)
         else:
-            last = self.segment_parts.pop()
-            new_val = last * factor
-            self.segment_parts.append(new_val)
+            self.segment_parts[-1] *= factor
 
     def multiply_all_thus_far(self, factor):
         # add up all parts and multiply by factor
-        sum_thus_far = sum(self.segment_parts)
+        sum_thus_far = self.segment_sum
         if sum_thus_far == 0:
             if isinstance(self.total, Time):
                 sum_thus_far = self.total
             else:
                 sum_thus_far = max(1, self.total)
-            if isinstance(self.total, Time) and isinstance(sum_thus_far, Time):
-                pass
-            else:
+            if not (isinstance(self.total, Time) and isinstance(sum_thus_far, Time)):
                 self.total = sum_thus_far * factor
         else:
             self.total += sum_thus_far * factor
@@ -331,11 +320,11 @@ class GetHebrewNumbers:
         raw_token, token, conjugate_letters = self.conj_words[index]
 
         if is_first and token in SHANA_STARTER:
-            self.total = Time(0, is_date=True)
+            self.multiply_all_thus_far(Time(0, is_date=True))
         elif is_first and token in MONTH_STARTER:
-            self.total = Time(months=0, is_date=True)
+            self.multiply_all_thus_far(Time(months=0, is_date=True))
         elif is_first and token in DAY_STARTER:
-            self.total = Time(days=0, is_date=True)
+            self.multiply_all_thus_far(Time(days=0, is_date=True))
         elif token in SHANA_WORDS and not (token == 'שְׁנֵי' and len(self.segment_parts) == 0):
             self.multiply_all_thus_far(Time(1))
         elif raw_token in TO_MONTH:
@@ -349,11 +338,11 @@ class GetHebrewNumbers:
         elif token in NIGHT_WORDS:
             self.multiply_all_thus_far(Time(days=0))
         elif token in FIXED_MAP:
-            self.add_number(FIXED_MAP[token], conjugate_letters)
+            self.add_number(FIXED_MAP[token])
         elif token in ALL_PLURAL_MAP:
             value = ALL_PLURAL_MAP[token]
             if conjugate_letters:
-                self.segment_parts.append(value)
+                self.add_number(value)
             else:
                 if token in HUNDREDS_PLURAL_MAP:
                     self.multiply_last(value)
@@ -380,37 +369,38 @@ class GetHebrewNumbers:
         self._tokenze()
         conj_words = self.conj_words
         for j in range(0, len(conj_words), 2):
-            current_word = conj_words[j]
-            previous_word = conj_words[j-2] if j-2 >= 0 else ConjWord()
-            next_word = conj_words[j+2] if j+2 < len(conj_words) else ConjWord()
+            current_conj_word = conj_words[j]
+            previous_conj_word = conj_words[j - 2] if j - 2 >= 0 else ConjWord()
+            next_conj_word = conj_words[j + 2] if j + 2 < len(conj_words) else ConjWord()
+            raw_word, word, conjugate_letters = current_conj_word
 
             # Should we terminate the current phrase before adding the current word?
-            if current_word.conjugate_letters not in [[], [ConjugateLetter.VAV]] \
-                    and previous_word.word not in STARTER_TIME_WORDS and current_word.raw_word not in TO_MONTH:
+            if conjugate_letters not in [[], [ConjugateLetter.VAV]] \
+                    and previous_conj_word.word not in STARTER_TIME_WORDS and current_conj_word.raw_word not in TO_MONTH:
                 self.terminate_phrase()
-            elif current_word.word in STARTER_TIME_WORDS and current_word.word not in TIME_WORDS:
+            elif word in STARTER_TIME_WORDS and word not in TIME_WORDS:
                 self.terminate_phrase()
-            elif previous_word.raw_word == current_word.raw_word:
+            elif previous_conj_word.raw_word == raw_word:
                 self.terminate_phrase()
-            elif current_word.raw_word == 'מֵאָה' and next_word.word not in ALL_TIME_WORDS \
+            elif raw_word == 'מֵאָה' and next_conj_word.word not in ALL_TIME_WORDS \
                 and self.current_phrase_first_index is not None \
                     and not any(
                 conj_words[t].word in ALL_PLURAL_MAP | COUPLE_MAP for t in range(self.current_phrase_first_index, j)):
                 self.terminate_phrase()
 
-            if (previous_word.word, current_word.raw_word) in EXCEPTION_BECAUSE_OF_PREVIOUS_WORD \
-                    or (previous_word.raw_word, current_word.raw_word) in EXCEPTION_BECAUSE_OF_PREVIOUS_WORD:
+            if (previous_conj_word.word, raw_word) in EXCEPTION_BECAUSE_OF_PREVIOUS_WORD \
+                    or (previous_conj_word.raw_word, raw_word) in EXCEPTION_BECAUSE_OF_PREVIOUS_WORD:
                 self.terminate_phrase()
-            elif (current_word.word, next_word.raw_word) in EXCEPTIONS_BECAUSE_OF_NEXT_WORD:
+            elif (word, next_conj_word.raw_word) in EXCEPTIONS_BECAUSE_OF_NEXT_WORD:
                 self.terminate_phrase()
-            elif current_word.word in THE_ONE and self.current_phrase_first_index is None \
-                    and next_word.raw_word not in ["עֶשְׂרֵה", "לַחֹדֶשׁ"] \
-                    and next_word.conjugate_letters != [ConjugateLetter.VAV]:
+            elif word in THE_ONE and self.current_phrase_first_index is None \
+                    and next_conj_word.raw_word not in ["עֶשְׂרֵה", "לַחֹדֶשׁ"] \
+                    and next_conj_word.conjugate_letters != [ConjugateLetter.VAV]:
                 self.append_phrase(j)
                 self.terminate_phrase()
-            elif current_word.word in ALL_NUMBER_WORDS:
+            elif word in ALL_NUMBER_WORDS:
                 self.append_phrase(j)
-            elif current_word.word in ALL_TIME_WORDS and self.current_phrase_first_index is not None or current_word.word in STARTER_TIME_WORDS:
+            elif word in ALL_TIME_WORDS and self.current_phrase_first_index is not None or word in STARTER_TIME_WORDS:
                 self.append_phrase(j)
             else:
                 self.terminate_phrase()
