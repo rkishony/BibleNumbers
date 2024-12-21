@@ -264,10 +264,13 @@ class GetHebrewNumbers:
     current_phrase_first_index: Optional[int] = None
     current_phrase_last_index: Optional[int] = None
 
-    current_segment: Union[int, float] = 0
     segment_parts: List[Union[int, float]] = field(default_factory=list)
 
     conj_words: List[ConjWord] = None
+
+    @property
+    def segment_sum(self):
+        return sum(self.segment_parts)
 
     def _tokenze(self):
         is_word_and_raw_tokens = tokenize_words_and_punctuations(self.verse)
@@ -278,26 +281,21 @@ class GetHebrewNumbers:
 
     def add_number(self, num, conjugate_letters):
         if conjugate_letters == [ConjugateLetter.VAV]:
-            self.current_segment += num
             self.segment_parts.append(num)
         else:
-            if self.current_segment == 0:
-                self.current_segment = num
+            if self.segment_sum == 0:
                 self.segment_parts = [num]
             else:
                 # Add it (rare case without 'ו'), but let's keep consistency
-                self.current_segment += num
                 self.segment_parts.append(num)
 
     def multiply_last(self, factor):
         if not self.segment_parts:
             # If no parts, just add factor
-            self.current_segment += factor
             self.segment_parts.append(factor)
         else:
             last = self.segment_parts.pop()
             new_val = last * factor
-            self.current_segment = self.current_segment - last + new_val
             self.segment_parts.append(new_val)
 
     def multiply_all_thus_far(self, factor):
@@ -315,13 +313,11 @@ class GetHebrewNumbers:
         else:
             self.total += sum_thus_far * factor
         self.segment_parts = []
-        self.current_segment = 0
 
     def reset_phrase(self):
         self.total = 0
         self.current_phrase_first_index = None
         self.current_phrase_last_index = None
-        self.current_segment = 0
         self.segment_parts.clear()
 
     def append_phrase(self, index: int):
@@ -357,7 +353,6 @@ class GetHebrewNumbers:
         elif token in ALL_PLURAL_MAP:
             value = ALL_PLURAL_MAP[token]
             if conjugate_letters:
-                self.current_segment += value
                 self.segment_parts.append(value)
             else:
                 if token in HUNDREDS_PLURAL_MAP:
@@ -368,7 +363,7 @@ class GetHebrewNumbers:
     def terminate_phrase(self):
         if self.current_phrase_first_index is None:
             return
-        self.total += self.current_segment
+        self.total += self.segment_sum
         if isinstance(self.total, Time) and self.total.to_number() > 0 or not isinstance(self.total, Time) and self.total > 0:
             self.numeric_hebrews.append(NumericHebrew(
                 book='',
