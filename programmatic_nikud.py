@@ -215,6 +215,9 @@ ALL_EXCEPTION_WORDS = set(w for w, _ in EXCEPTION_BECAUSE_OF_PREVIOUS_WORD) | se
 
 ALL_WORDS = ALL_NUMBER_WORDS | ALL_TIME_WORDS | ALL_EXCEPTION_WORDS
 
+CUT_AT = {
+    "וְאִישׁ בְּמָעוֹן וּמַעֲשֵׂהוּ בַכַּרְמֶל, וְהָאִישׁ גָּדוֹל מְאֹד, וְלוֹ צֹאן שְׁלֹשֶׁת-אֲלָפִים"
+}
 
 class ConjugateLetter(Enum):
     """Conjugate letters with their forms for numbers and grammar."""
@@ -282,7 +285,10 @@ class GetHebrewNumbers:
         return self.current_phrase_first_index is None
 
     def _tokenze(self):
-        is_word_and_raw_tokens = tokenize_words_and_punctuations(self.verse)
+        verse = self.verse
+        for cut in CUT_AT:
+            verse = verse.replace(cut, cut + '|')
+        is_word_and_raw_tokens = tokenize_words_and_punctuations(verse)
         self.conj_words = [
             ConjWord.from_raw_word(raw_token) if is_word else ConjWord(raw_token, raw_token)
             for is_word, raw_token in is_word_and_raw_tokens
@@ -397,7 +403,7 @@ class GetHebrewNumbers:
             if conjugate_letters not in [[], [ConjugateLetter.VAV]] \
                     and previous_conj_word.word not in STARTER_TIME_WORDS and current_conj_word.raw_word not in TO_MONTH:
                 self.terminate_phrase()
-            elif previous_punctuation.startswith(':'):
+            elif previous_punctuation.startswith(':') or '|' in previous_punctuation:
                 self.terminate_phrase()
             elif word in STARTER_TIME_WORDS and word not in TIME_WORDS:
                 self.terminate_phrase()
