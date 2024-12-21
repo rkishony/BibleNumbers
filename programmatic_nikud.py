@@ -341,7 +341,9 @@ class GetHebrewNumbers:
     def get(self):
         self._tokenze()
         conj_words = self.conj_words
-        for j in range(0, len(conj_words), 2):
+        j = -2
+        while j <= len(conj_words) - 3:
+            j += 2
             current_conj_word = conj_words[j]
             previous_conj_word = conj_words[j - 2] if j - 2 >= 0 else ConjWord()
             next_conj_word = conj_words[j + 2] if j + 2 < len(conj_words) else ConjWord()
@@ -395,16 +397,18 @@ class GetHebrewNumbers:
                 else:
                     self.terminate_phrase()
             elif word in FIXED_MAP:
-                self.add_number(j, FIXED_MAP[word])
+                if next_conj_word.word in HUNDREDS_PLURAL_MAP:
+                    self.add_number(j, FIXED_MAP[word] * 100)
+                    j += 2
+                    self._append_phrase(j)
+                else:
+                    self.add_number(j, FIXED_MAP[word])
             elif word in ALL_PLURAL_MAP:
                 value = ALL_PLURAL_MAP[word]
                 if conjugate_letters:
                     self.add_number(j, value)
                 else:
-                    if word in HUNDREDS_PLURAL_MAP:
-                        self.multiply_last(j, value)
-                    else:
-                        self.multiply_all_thus_far(j, value)
+                    self.multiply_all_thus_far(j, value)
             else:
                 self.terminate_phrase()
         self.terminate_phrase()
