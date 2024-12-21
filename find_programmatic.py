@@ -1,3 +1,4 @@
+import numpy as np
 from matplotlib import pyplot as plt
 
 from bible_types import VerseAndNumericHebrews, Time
@@ -12,6 +13,15 @@ def _converrt_to_number(x):
         except:
             return None
     return x
+
+
+def plot_accumulated_histogram(ax, x, normalize=False, marker='o', linestyle='-', color='b', name=''):
+    x = sorted(x)
+    y = np.arange(len(x))
+    if normalize:
+        y = y / y[-1]
+    name += f' (n={len(x)})'
+    ax.semilogx(x, y, marker=marker, linestyle=linestyle, color=color, markersize=2, label=name)
 
 
 def main():
@@ -35,10 +45,23 @@ def main():
         total_numeric_hebrews += len(numeric_hebrews)
     print(f"Total numeric hebrews: {total_numeric_hebrews}")
 
-    all_numbers = [_converrt_to_number(numeric_hebrew.number) for numeric_hebrews in verses_to_matches.values() for numeric_hebrew in numeric_hebrews]
+    all_numeric_hebrews = [numeric_hebrew for numeric_hebrews in verses_to_matches.values() for numeric_hebrew in numeric_hebrews]
+
+    not_time = [x.number for x in all_numeric_hebrews if not isinstance(x.number, Time)]
+
+    all_numbers = [_converrt_to_number(numeric_hebrew.number) for numeric_hebrew in all_numeric_hebrews]
+
+    all_years = [x.number.to_number() for x in all_numeric_hebrews if isinstance(x.number, Time)]
+
     # plot accumulated histogram of all numbers
-    all_numbers = sorted(all_numbers)
-    plt.semilogx(all_numbers, range(len(all_numbers)), '.-')
+    plt.figure()
+    ax = plt.gca()
+    plot_accumulated_histogram(ax, all_numbers, normalize=True, color='r', name='All numbers')
+    plot_accumulated_histogram(ax, all_years, normalize=True, color='g', name='All years')
+    plot_accumulated_histogram(ax, not_time, normalize=True, color='b', name='Not time')
+    ax.legend()
+    ax.set_xlabel('Value')
+    ax.set_ylabel('Accumulated fraction')
     plt.show()
 
 

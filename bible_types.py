@@ -173,11 +173,11 @@ class Time:
 
     def __str__(self):
         if self.is_date:
-            if self._is_day_only():
+            if self.is_day_only():
                 return f"יום מספר {self.days}"
-            if self._is_month_only():
+            if self.is_month_only():
                 return f"חודש מספר {self.months}"
-            if self._is_year_only():
+            if self.is_year_only():
                 return f"שנה מספר {self.years}"
             raise ValueError("Invalid date")
         texts = []
@@ -189,13 +189,13 @@ class Time:
             texts.append(f"{self.days} יום")
         return " ".join(texts)
 
-    def _is_year_only(self):
+    def is_year_only(self):
         return self.years is not None and self.months is None and self.days is None
 
-    def _is_month_only(self):
+    def is_month_only(self):
         return self.months is not None and self.years is None and self.days is None
 
-    def _is_day_only(self):
+    def is_day_only(self):
         return self.days is not None and self.years is None and self.months is None
 
     def _convert_to_time(self, other):
@@ -207,11 +207,11 @@ class Time:
                         None if self.months is None else 0,
                         None if self.days is None else 0,
                         self.is_date)
-        if self._is_day_only():
+        if self.is_day_only():
             return Time(days=other)
-        if self._is_month_only():
+        if self.is_month_only():
             return Time(months=other)
-        if self._is_year_only():
+        if self.is_year_only():
             return Time(years=other)
         raise ValueError("Invalid date")
 
