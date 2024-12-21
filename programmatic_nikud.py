@@ -396,7 +396,7 @@ def get_hebrew_numbers(verse: str) -> List[NumericHebrew]:
             terminate_phrase()
         elif previous_word.raw_word == current_word.raw_word:
             terminate_phrase()
-        elif current_word.word == 'מֵאָה' and next_word.word not in ALL_TIME_WORDS \
+        elif current_word.raw_word == 'מֵאָה' and next_word.word not in ALL_TIME_WORDS \
             and current_phrase_first_index is not None \
                 and not any(
             conj_words[t].word in ALL_PLURAL_MAP | COUPLE_MAP for t in range(current_phrase_first_index, j)):
