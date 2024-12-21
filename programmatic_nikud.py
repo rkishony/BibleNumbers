@@ -216,8 +216,14 @@ ALL_EXCEPTION_WORDS = set(w for w, _ in EXCEPTION_BECAUSE_OF_PREVIOUS_WORD) | se
 ALL_WORDS = ALL_NUMBER_WORDS | ALL_TIME_WORDS | ALL_EXCEPTION_WORDS
 
 CUT_AT = {
-    "וְאִישׁ בְּמָעוֹן וּמַעֲשֵׂהוּ בַכַּרְמֶל, וְהָאִישׁ גָּדוֹל מְאֹד, וְלוֹ צֹאן שְׁלֹשֶׁת-אֲלָפִים"
+#    "וְאִישׁ בְּמָעוֹן וּמַעֲשֵׂהוּ בַכַּרְמֶל, וְהָאִישׁ גָּדוֹל מְאֹד, וְלוֹ צֹאן שְׁלֹשֶׁת-אֲלָפִים"
 }
+
+
+def get_index_of_non_zero_digit(n: int) -> List[int]:
+    s = str(n)
+    return [len(s) - i - 1 for i, digit in enumerate(s) if digit != '0']
+
 
 class ConjugateLetter(Enum):
     """Conjugate letters with their forms for numbers and grammar."""
@@ -302,13 +308,23 @@ class GetHebrewNumbers:
         self.segment_parts.append(num)
         self._append_phrase(index)
 
-    def multiply_last(self, index, factor):
-        if not self.segment_parts:
-            # If no parts, just add factor
-            self.segment_parts.append(factor)
+    def _add_to_total(self, index, add_to_total):
+        overlap = False
+        if isinstance(add_to_total, Time) and isinstance(self.total, Time):
+            for unit in ['days', 'months', 'years']:
+                a = getattr(add_to_total, unit)
+                b = getattr(self.total, unit)
+                if a and b:
+                    overlap = overlap or set(get_index_of_non_zero_digit(a)) & set(get_index_of_non_zero_digit(b))
+        elif not isinstance(add_to_total, Time) and not isinstance(self.total, Time):
+            overlap = set(get_index_of_non_zero_digit(add_to_total)) & set(get_index_of_non_zero_digit(self.total))
+        if overlap:
+            end = index - len(self.segment_parts) * 2 - 2
+            self.terminate_phrase(end=end, add_to_total=False)
+            self.current_phrase_first_index = end + 2
+            self.total = add_to_total
         else:
-            self.segment_parts[-1] *= factor
-        self._append_phrase(index)
+            self.total += add_to_total
 
     def multiply_all_thus_far(self, index, factor):
         # add up all parts and multiply by factor
@@ -321,7 +337,7 @@ class GetHebrewNumbers:
             if not (isinstance(self.total, Time) and isinstance(sum_thus_far, Time)):
                 self.total = sum_thus_far * factor
         else:
-            self.total += sum_thus_far * factor
+            self._add_to_total(index, sum_thus_far * factor)
         self.segment_parts = []
         self._append_phrase(index)
 
@@ -339,19 +355,19 @@ class GetHebrewNumbers:
         assert self.current_phrase_last_index is None or self.current_phrase_last_index + 2 == index
         self.current_phrase_last_index = index
 
-    def terminate_phrase(self):
+    def terminate_phrase(self, end=None, add_to_total=True):
+        end = end if end is not None else self.current_phrase_last_index
         if self.current_phrase_first_index is None:
             return
-        is_all_time = all(self.conj_words[i].word in ALL_TIME_WORDS - {'שְׁנֵי'} for i in range(self.current_phrase_first_index, self.current_phrase_last_index + 1, 2))
+        is_all_time = all(self.conj_words[i].word in ALL_TIME_WORDS - {'שְׁנֵי'} for i in range(self.current_phrase_first_index, end + 1, 2))
         if is_all_time:
             self.reset_phrase()
             return
-
-        self.total += self.segment_sum
+        if add_to_total:
+            self._add_to_total(end + 2, self.segment_sum)
 
         if isinstance(self.total, Time) and self.total.to_number() > 0 or not isinstance(self.total, Time) and self.total > 0:
-            self.numeric_hebrews_indices_and_total.append(
-                (self.current_phrase_first_index, self.current_phrase_last_index, self.total))
+            self.numeric_hebrews_indices_and_total.append((self.current_phrase_first_index, end, self.total))
         self.reset_phrase()
 
     def _adjust_dates_retroactively(self):
