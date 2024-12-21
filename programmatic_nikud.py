@@ -343,9 +343,12 @@ class GetHebrewNumbers:
             self.numeric_hebrews_indices_and_total[-1][1] if self.numeric_hebrews_indices_and_total else -1
 
         if not isinstance(self.total, Time):
-            is_preceded_by_day = self.current_phrase_first_index - 2 >= 0 and self.conj_words[self.current_phrase_first_index - 2].word in DAY_WORDS
-            if is_preceded_by_day:
+            if self.current_phrase_first_index - 2 >= 0 and self.conj_words[self.current_phrase_first_index - 2].word in DAY_WORDS:
                 self.total = Time(days=self.total)
+                if last_index_of_previous_phrase < self.current_phrase_first_index - 2:
+                    self.current_phrase_first_index -= 2
+            elif self.current_phrase_first_index - 2 >= 0 and self.conj_words[self.current_phrase_first_index - 2].word in MONTH_WORDS:
+                self.total = Time(months=self.total, is_date=True)
                 if last_index_of_previous_phrase < self.current_phrase_first_index - 2:
                     self.current_phrase_first_index -= 2
 
