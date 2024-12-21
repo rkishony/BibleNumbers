@@ -370,8 +370,8 @@ class GetHebrewNumbers:
                         total.is_date = True
                     else:
                         total = Time(days=total, is_date=True)
-                    # if can_add_next:
-                    #     end += 2
+                    if can_add_next:
+                        end += 2
             new_numeric_hebrews_indices_and_total.append((start, end, total))
         self.numeric_hebrews_indices_and_total = new_numeric_hebrews_indices_and_total
 
