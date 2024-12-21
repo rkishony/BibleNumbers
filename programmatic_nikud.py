@@ -386,9 +386,14 @@ class GetHebrewNumbers:
             next_conj_word = conj_words[j + 2] if j + 2 < len(conj_words) else ConjWord()
             raw_word, word, conjugate_letters = current_conj_word
 
+            next_punctuation = conj_words[j + 1].word if j + 1 < len(conj_words) else ''
+            previous_punctuation = conj_words[j - 1].word if j - 1 >= 0 else ''
+
             # Should we terminate the current phrase before adding the current word?
             if conjugate_letters not in [[], [ConjugateLetter.VAV]] \
                     and previous_conj_word.word not in STARTER_TIME_WORDS and current_conj_word.raw_word not in TO_MONTH:
+                self.terminate_phrase()
+            elif previous_punctuation.startswith(':'):
                 self.terminate_phrase()
             elif word in STARTER_TIME_WORDS and word not in TIME_WORDS:
                 self.terminate_phrase()
