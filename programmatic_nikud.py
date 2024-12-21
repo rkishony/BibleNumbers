@@ -1,7 +1,7 @@
 import re
 from dataclasses import dataclass, field
 from enum import Enum
-from typing import Iterable, List, NamedTuple, Union, Optional
+from typing import Iterable, List, NamedTuple, Union, Optional, Tuple
 
 from bible_types import Time, NumericHebrew
 from bible_utils import tokenize_words_and_punctuations
@@ -260,7 +260,7 @@ class ConjWord(NamedTuple):
 class GetHebrewNumbers:
     verse: str
 
-    numeric_hebrews: List[NumericHebrew] = field(default_factory=list)
+    numeric_hebrews_indices_and_total: List[Tuple[int, int, Union[int, float, Time]]] = field(default_factory=list)
     total: Union[int, float, Time] = 0
     current_phrase_first_index: Optional[int] = None
     current_phrase_last_index: Optional[int] = None
@@ -332,17 +332,26 @@ class GetHebrewNumbers:
     def terminate_phrase(self):
         if self.current_phrase_first_index is None:
             return
+        is_all_time = all(self.conj_words[i].word in ALL_TIME_WORDS - {'שְׁנֵי'} for i in range(self.current_phrase_first_index, self.current_phrase_last_index + 1, 2))
+        if is_all_time:
+            self.reset_phrase()
+            return
+
         self.total += self.segment_sum
+
+        last_index_of_previous_phrase = \
+            self.numeric_hebrews_indices_and_total[-1][1] if self.numeric_hebrews_indices_and_total else -1
+
+        if not isinstance(self.total, Time):
+            is_preceded_by_day = self.current_phrase_first_index - 2 >= 0 and self.conj_words[self.current_phrase_first_index - 2].word in DAY_WORDS
+            if is_preceded_by_day:
+                self.total = Time(days=self.total)
+                if last_index_of_previous_phrase < self.current_phrase_first_index - 2:
+                    self.current_phrase_first_index -= 2
+
         if isinstance(self.total, Time) and self.total.to_number() > 0 or not isinstance(self.total, Time) and self.total > 0:
-            self.numeric_hebrews.append(NumericHebrew(
-                book='',
-                chapter='',
-                letter='',
-                quote=''.join(conj_word.raw_word
-                               for conj_word in self.conj_words[self.current_phrase_first_index:self.current_phrase_last_index + 1]),
-                number=self.total,
-                entity='',
-            ))
+            self.numeric_hebrews_indices_and_total.append(
+                (self.current_phrase_first_index, self.current_phrase_last_index, self.total))
         self.reset_phrase()
 
     def get(self):
@@ -381,29 +390,26 @@ class GetHebrewNumbers:
                     next_conj_word.conjugate_letters != [ConjugateLetter.VAV]):
                 self.add_number(j, 1)
                 self.terminate_phrase()
-            elif word in ALL_TIME_WORDS and not self.is_first or word in STARTER_TIME_WORDS:
-                if self.is_first and word in SHANA_STARTER:
-                    self.multiply_all_thus_far(j, Time(0, is_date=True))
-                elif self.is_first and word in MONTH_STARTER:
-                    self.multiply_all_thus_far(j, Time(months=0, is_date=True))
-                elif self.is_first and word in DAY_STARTER:
-                    self.multiply_all_thus_far(j, Time(days=0, is_date=True))
-                elif word in SHANA_WORDS and not (word == 'שְׁנֵי' and len(self.segment_parts) == 0):
-                    self.multiply_all_thus_far(j, Time(1))
-                elif raw_word in TO_MONTH:
-                    if not isinstance(self.total, Time):
-                        self.multiply_all_thus_far(j, Time(days=1))
-                    else:
-                        self._append_phrase(j)
-                    self.total.is_date = True
-                elif word in MONTH_WORDS:
-                    self.multiply_all_thus_far(j, Time(months=1))
-                elif word in DAY_WORDS:
+            elif self.is_first and word in SHANA_STARTER:
+                self.multiply_all_thus_far(j, Time(0, is_date=True))
+            elif self.is_first and word in MONTH_STARTER:
+                self.multiply_all_thus_far(j, Time(months=0, is_date=True))
+            elif self.is_first and word in DAY_STARTER:
+                self.multiply_all_thus_far(j, Time(days=0, is_date=True))
+            elif word in SHANA_WORDS and not (word == 'שְׁנֵי' and len(self.segment_parts) == 0) and not self.is_first:
+                self.multiply_all_thus_far(j, Time(1))
+            elif raw_word in TO_MONTH and not self.is_first:
+                if not isinstance(self.total, Time):
                     self.multiply_all_thus_far(j, Time(days=1))
-                elif word in NIGHT_WORDS:
-                    self.multiply_all_thus_far(j, Time(days=0))
                 else:
-                    self.terminate_phrase()
+                    self._append_phrase(j)
+                self.total.is_date = True
+            elif word in MONTH_WORDS and not self.is_first:
+                self.multiply_all_thus_far(j, Time(months=1))
+            elif word in DAY_WORDS and not self.is_first:
+                self.multiply_all_thus_far(j, Time(days=1))
+            elif word in NIGHT_WORDS and not self.is_first:
+                self.multiply_all_thus_far(j, Time(days=0))
             elif word in FIXED_MAP:
                 if self.is_first:
                     if previous_conj_word.word in ["לַחֹדֶשׁ"] and conjugate_letters == [ConjugateLetter.HEY]:
@@ -423,7 +429,18 @@ class GetHebrewNumbers:
             else:
                 self.terminate_phrase()
         self.terminate_phrase()
-        return self.numeric_hebrews
+        return self._get_numeric_hebrew()
+
+    def _get_numeric_hebrew(self):
+        return [
+            NumericHebrew(
+                book='',
+                chapter='',
+                letter='',
+                quote=''.join(conj_word.raw_word for conj_word in self.conj_words[start:end + 1]),
+                number=total,
+                entity='',
+            ) for start, end, total in self.numeric_hebrews_indices_and_total]
 
 
 def iter_hebrew_numbers(with_hatayot: bool = True):
