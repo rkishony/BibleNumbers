@@ -287,8 +287,7 @@ class GetHebrewNumbers:
         for power in [1, 10, 100]:
             if power <= num < power * 10:
                 if any(power <= n < power * 10 for n in self.segment_parts):
-                    print(f"Warning: {num} is not a valid number")
-                    print(self.verse)
+                    self.terminate_phrase()
         self.segment_parts.append(num)
         self._append_phrase(index)
 
