@@ -209,6 +209,7 @@ ALL_EXCEPTION_WORDS = set(w for w, _ in EXCEPTION_BECAUSE_OF_PREVIOUS_WORD) | se
 
 ALL_WORDS = ALL_NUMBER_WORDS | ALL_TIME_WORDS | ALL_EXCEPTION_WORDS
 
+
 class ConjugateLetter(Enum):
     """Conjugate letters with their forms for numbers and grammar."""
     BET = 'ב'
@@ -246,10 +247,11 @@ class ConjWord(NamedTuple):
     word: str = None
     conjugate_letters: List[ConjugateLetter] = None
 
-
-def convert_word_to_conj_word(raw_word: str) -> ConjWord:
-    word, conjugate_letters = preprocess_token(raw_word, expected_nouns=ALL_WORDS)
-    return ConjWord(raw_word, word, conjugate_letters)
+    @classmethod
+    def from_raw_word(cls, raw_word: str, expected_nouns: Iterable[str] = None):
+        expected_nouns = expected_nouns or ALL_WORDS
+        word, conjugate_letters = preprocess_token(raw_word, expected_nouns=expected_nouns)
+        return cls(raw_word, word, conjugate_letters)
 
 
 def get_hebrew_numbers(verse: str) -> List[NumericHebrew]:
@@ -258,7 +260,7 @@ def get_hebrew_numbers(verse: str) -> List[NumericHebrew]:
     """
     is_word_and_raw_tokens = tokenize_words_and_punctuations(verse)
     conj_words = [
-        convert_word_to_conj_word(raw_token) if is_word else ConjWord(raw_token, raw_token)
+        ConjWord.from_raw_word(raw_token) if is_word else ConjWord(raw_token, raw_token)
         for is_word, raw_token in is_word_and_raw_tokens
     ]
 
@@ -420,123 +422,6 @@ def get_hebrew_numbers(verse: str) -> List[NumericHebrew]:
     return numeric_hebrews
 
 
-def tokenize(text: str) -> list[str]:
-    # Define a regex pattern to match Hebrew words with vowels
-    # \u0590-\u05FF covers Hebrew letters, \u05B0-\u05BC and \u05C1-\u05C2 cover Hebrew vowel signs and diacritics
-    pattern = r'[\u0590-\u05FF\u05B0-\u05BC\u05C1-\u05C2]+'
-    words = re.findall(pattern, text)
-    return words
-
-
-def hebrew_num_to_int(phrase: str) -> int:
-
-    tokens = tokenize(phrase)
-
-    total = 0
-    current_segment = 0
-    segment_parts = []  # track numbers added in the current segment
-
-    def add_number(num, conjugate_letters):
-        nonlocal current_segment, segment_parts
-        if conjugate_letters == [ConjugateLetter.VAV]:
-            current_segment += num
-            segment_parts.append(num)
-        else:
-            if current_segment == 0:
-                current_segment = num
-                segment_parts = [num]
-            else:
-                # Add it (rare case without 'ו'), but let's keep consistency
-                current_segment += num
-                segment_parts.append(num)
-
-    def multiply_last(factor):
-        nonlocal current_segment, segment_parts
-        if not segment_parts:
-            # If no parts, just add factor
-            current_segment += factor
-            segment_parts.append(factor)
-        else:
-            last = segment_parts.pop()
-            new_val = last * factor
-            current_segment = current_segment - last + new_val
-            segment_parts.append(new_val)
-
-    def multiply_all_thus_far(factor):
-        nonlocal current_segment, segment_parts, total
-        # add up all parts and multiply by factor
-        sum_thus_far = sum(segment_parts)
-        if sum_thus_far == 0:
-            if isinstance(total, Time):
-                sum_thus_far = total
-            else:
-                sum_thus_far = max(1, total)
-            if isinstance(total, Time) and isinstance(sum_thus_far, Time):
-                pass
-            else:
-                total = sum_thus_far * factor
-        else:
-            total += sum_thus_far * factor
-        segment_parts = []
-        current_segment = 0
-
-    for j, raw_token in enumerate(tokens):
-        is_first = j == 0
-        token, conjugate_letters = preprocess_token(raw_token, expected_nouns=ALL_WORDS)
-
-        if token not in ALL_NUMBER_WORDS and token not in ALL_TIME_WORDS:
-            print(f"Token not recognized as number: {token}")
-
-        if is_first and token in SHANA_STARTER:
-            total = Time(0, is_date=True)
-            continue
-        if is_first and token in MONTH_STARTER:
-            total = Time(months=0, is_date=True)
-            continue
-        if is_first and token in DAY_STARTER:
-            total = Time(days=0, is_date=True)
-            continue
-        if token in SHANA_WORDS and not (token == 'שְׁנֵי' and len(segment_parts) == 0):
-            multiply_all_thus_far(Time(1))
-            continue
-        if raw_token in ["לַחֹדֶשׁ", "לְחֹדֶשׁ", "בַחֹדֶשׁ"]:
-            if not isinstance(total, Time):
-                multiply_all_thus_far(Time(days=1))
-            total.is_date = True
-            continue
-        if token in MONTH_WORDS:
-            multiply_all_thus_far(Time(months=1))
-            continue
-        if token in DAY_WORDS:
-            multiply_all_thus_far(Time(days=1))
-            continue
-        if token in NIGHT_WORDS:
-            multiply_all_thus_far(Time(days=0))
-            continue
-
-        # Units or construct forms
-        if token in FIXED_MAP:
-            add_number(FIXED_MAP[token], conjugate_letters)
-            continue
-
-        if token in ALL_PLURAL_MAP:
-            value = ALL_PLURAL_MAP[token]
-            if conjugate_letters:
-                current_segment += value
-                segment_parts.append(value)
-            else:
-                if token in HUNDREDS_PLURAL_MAP:
-                    multiply_last(value)
-                else:
-                    multiply_all_thus_far(value)
-            continue
-
-        # token not recognized as number, we can continue or raise an error
-        continue
-    total += current_segment
-    return total
-
-
 def iter_hebrew_numbers(with_hatayot: bool = True):
     for unit in ALL_NUMBER_WORDS:
         yield unit
@@ -550,77 +435,6 @@ def is_numbers_in_verse(verse) -> bool:
     is_word_and_token = tokenize_words_and_punctuations(verse)
     words = [word for is_word, word in is_word_and_token if is_word]
     return any(is_word_in_hebrew_numbers(word) for word in words)
-
-
-def extract_number_phrases(verse: str) -> list[str]:
-
-    raw_tokens = tokenize(verse)
-    tokens_and_conjugate_letters = [preprocess_token(token, expected_nouns=ALL_WORDS
-                                                     ) for token in raw_tokens]
-    raw_tokens_tokens_conjugate_letters = list(zip(raw_tokens, tokens_and_conjugate_letters))
-    phrases = []
-    current_phrase = []
-
-    def add_phrase(from_, to_):
-        tokens = [token for raw_token, (token, _) in raw_tokens_tokens_conjugate_letters[from_:to_]]
-        raw_tokens = [raw_token for raw_token, _ in raw_tokens_tokens_conjugate_letters[from_:to_]]
-        if not all(token in ALL_TIME_WORDS - ALL_NUMBER_WORDS for token in tokens):
-            phrases.append(" ".join(raw_tokens))
-
-    def terminate_phrase():
-        if current_phrase:
-            indices_of_shana_in_current_phrase = [i for i, token in enumerate(current_phrase)
-                                                  if token in ALL_TIME_WORDS - STARTER_TIME_WORDS]
-            last_index_of_shana = indices_of_shana_in_current_phrase[-1] if indices_of_shana_in_current_phrase else None
-            if last_index_of_shana is not None and last_index_of_shana != len(current_phrase) - 1:
-                add_phrase(current_phrase[0], current_phrase[last_index_of_shana + 1])
-                add_phrase(current_phrase[last_index_of_shana + 1], current_phrase[-1] + 1)
-            else:
-                add_phrase(current_phrase[0], current_phrase[-1] + 1)
-            current_phrase.clear()
-
-    prev_raw_token, prev_token = None, None
-    for i, (raw_token, (token, conjugate_letters)) in enumerate(raw_tokens_tokens_conjugate_letters):
-        if i + 1 < len(raw_tokens):
-            next_raw_token, (next_token, next_conjugate_letters) = raw_tokens_tokens_conjugate_letters[i + 1]
-        else:
-            next_raw_token, next_token, next_conjugate_letters = None, None, []
-
-        if conjugate_letters not in [[], [ConjugateLetter.VAV]] and current_phrase \
-                and prev_token not in STARTER_TIME_WORDS:
-            terminate_phrase()
-        if raw_token in STARTER_TIME_WORDS and raw_token not in TIME_WORDS:
-            terminate_phrase()
-        if (prev_token, raw_token) in EXCEPTION_BECAUSE_OF_PREVIOUS_WORD \
-                or (prev_raw_token, raw_token) in EXCEPTION_BECAUSE_OF_PREVIOUS_WORD:
-            terminate_phrase()
-        elif (raw_token, next_raw_token) in EXCEPTIONS_BECAUSE_OF_NEXT_WORD:
-            terminate_phrase()
-        elif token in THE_ONE and len(current_phrase) == 0 and next_token not in ["עֶשְׂרֵה", "לַחֹדֶשׁ"] \
-                and next_conjugate_letters != [ConjugateLetter.VAV]:
-            current_phrase.append(i)
-            terminate_phrase()
-        elif (token in ALL_WORDS or raw_token in ALL_WORDS) and (
-                prev_token == token or token == 'מֵאָה' and next_token not in ALL_TIME_WORDS and \
-                not any(raw_tokens_tokens_conjugate_letters[t][1][0] in ALL_PLURAL_MAP | COUPLE_MAP
-                        for t in current_phrase)):
-            # terminate if end of sentence, or for שנים שנים
-            terminate_phrase()
-            current_phrase.append(i)
-        elif token in ALL_NUMBER_WORDS:
-            # Start or continue a phrase
-            current_phrase.append(i)
-        elif token in ALL_TIME_WORDS and current_phrase or token in STARTER_TIME_WORDS:
-            # If 'שנה' appears we include it
-            current_phrase.append(i)
-        else:
-            # Not a number word or ignore word while phrase_active
-            terminate_phrase()
-
-        prev_raw_token, prev_token = raw_token, token
-
-    terminate_phrase()
-    return phrases
 
 
 def get_verses_with_numbers(with_nikud: bool = True, remove_punctuations: bool = True) -> list[str]:

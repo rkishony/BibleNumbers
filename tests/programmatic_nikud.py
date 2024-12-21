@@ -1,7 +1,7 @@
 import pytest
 
 from bible_types import Time
-from programmatic_nikud import hebrew_num_to_int, extract_number_phrases, preprocess_token, get_hebrew_numbers
+from programmatic_nikud import preprocess_token, get_hebrew_numbers
 
 
 def test_preprocess_token():
@@ -13,6 +13,7 @@ def test_preprocess_token():
 
 
 @pytest.mark.parametrize("hebrew, expected", [
+    ("שֶׁבַע וּמֵאָה", 107),
     ("שֶׁבַע שְׁנֵי", Time(7)),
     ("אַרְבַּע מֵאוֹת אֶלֶף", 400000),
     ("שְׁנַיִם וּשְׁלֹשִׁים אֶלֶף וַחֲמֵשׁ מֵאוֹת", 32500),
@@ -31,7 +32,6 @@ def test_preprocess_token():
     ("אַרְבָּעִים שָׁנָה וּשְׁמוֹנֶה מֵאוֹת שָׁנָה", Time(840)),
     ("שְׁלֹשׁ מֵאוֹת", 300),
     ("שֶׁבַע וּמָאתַיִם", 207),
-    ("שֶׁבַע וּמֵאָה", 107),
     ("מְאַת שָׁנָה וּשְׁלֹשִׁים שָׁנָה וְשֶׁבַע שָׁנִים", Time(137)),
     ("שְׁלֹשִׁים וּמֵאָה", 130),
     ("שֶׁבַע וְאַרְבָּעִים וּמֵאָה", 147),
@@ -50,7 +50,8 @@ def test_hebrew_num_to_int(hebrew, expected):
     print()
     print(hebrew)
     print(expected)
-    assert hebrew_num_to_int(hebrew) == expected
+    hebrew_numbers = get_hebrew_numbers(hebrew)
+    assert hebrew_numbers[0].number == expected
 
 
 @pytest.mark.parametrize(
@@ -246,9 +247,6 @@ def test_extract_number_phrases(verse, expected):
     print()
     print(verse)
     print(expected)
-
-    # phrases = extract_number_phrases(verse)
-    # phrases_and_numbers = [(phrase, hebrew_num_to_int(phrase)) for phrase in phrases]
 
     hebrew_numbers = get_hebrew_numbers(verse)
     phrases_and_numbers = [(hebrew_number.quote, hebrew_number.number) for hebrew_number in hebrew_numbers]

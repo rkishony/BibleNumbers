@@ -1,26 +1,9 @@
-from typing import List
-
 from matplotlib import pyplot as plt
 
-from bible_types import VerseAndNumericHebrews, NumericHebrew, Time
+from bible_types import VerseAndNumericHebrews, Time
 from create_verses_html import create_html_of_verses_with_numbers, create_text_of_verses_with_numbers
-from programmatic_nikud import extract_number_phrases, hebrew_num_to_int, get_verses_with_numbers, get_hebrew_numbers
+from programmatic_nikud import get_verses_with_numbers, get_hebrew_numbers
 
-
-def extract_numeric_hebrews(verse) -> List[NumericHebrew]:
-    number_phrases = extract_number_phrases(verse.text)
-    numeric_hebrews = []
-    for phrase in number_phrases:
-        number = hebrew_num_to_int(phrase)
-        numeric_hebrews.append(NumericHebrew(
-            book=verse.book,
-            chapter=verse.chapter,
-            letter=verse.letter,
-            quote=phrase,
-            number=number,
-            entity=''
-        ))
-    return numeric_hebrews
 
 def _converrt_to_number(x):
     if isinstance(x, Time):
