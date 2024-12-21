@@ -272,6 +272,10 @@ class GetHebrewNumbers:
     def segment_sum(self):
         return sum(self.segment_parts)
 
+    @property
+    def is_first(self):
+        return self.current_phrase_first_index is None
+
     def _tokenze(self):
         is_word_and_raw_tokens = tokenize_words_and_punctuations(self.verse)
         self.conj_words = [
@@ -279,17 +283,19 @@ class GetHebrewNumbers:
             for is_word, raw_token in is_word_and_raw_tokens
         ]
 
-    def add_number(self, num):
+    def add_number(self, index, num):
         self.segment_parts.append(num)
+        self._append_phrase(index)
 
-    def multiply_last(self, factor):
+    def multiply_last(self, index, factor):
         if not self.segment_parts:
             # If no parts, just add factor
             self.segment_parts.append(factor)
         else:
             self.segment_parts[-1] *= factor
+        self._append_phrase(index)
 
-    def multiply_all_thus_far(self, factor):
+    def multiply_all_thus_far(self, index, factor):
         # add up all parts and multiply by factor
         sum_thus_far = self.segment_sum
         if sum_thus_far == 0:
@@ -302,6 +308,7 @@ class GetHebrewNumbers:
         else:
             self.total += sum_thus_far * factor
         self.segment_parts = []
+        self._append_phrase(index)
 
     def reset_phrase(self):
         self.total = 0
@@ -309,45 +316,11 @@ class GetHebrewNumbers:
         self.current_phrase_last_index = None
         self.segment_parts.clear()
 
-    def append_phrase(self, index: int):
+    def _append_phrase(self, index: int):
         if self.current_phrase_first_index is None:
             self.current_phrase_first_index = index
-            is_first = True
-        else:
-            is_first = False
         assert self.current_phrase_last_index is None or self.current_phrase_last_index + 2 == index
         self.current_phrase_last_index = index
-        raw_token, token, conjugate_letters = self.conj_words[index]
-
-        if is_first and token in SHANA_STARTER:
-            self.multiply_all_thus_far(Time(0, is_date=True))
-        elif is_first and token in MONTH_STARTER:
-            self.multiply_all_thus_far(Time(months=0, is_date=True))
-        elif is_first and token in DAY_STARTER:
-            self.multiply_all_thus_far(Time(days=0, is_date=True))
-        elif token in SHANA_WORDS and not (token == 'שְׁנֵי' and len(self.segment_parts) == 0):
-            self.multiply_all_thus_far(Time(1))
-        elif raw_token in TO_MONTH:
-            if not isinstance(self.total, Time):
-                self.multiply_all_thus_far(Time(days=1))
-            self.total.is_date = True
-        elif token in MONTH_WORDS:
-            self.multiply_all_thus_far(Time(months=1))
-        elif token in DAY_WORDS:
-            self.multiply_all_thus_far(Time(days=1))
-        elif token in NIGHT_WORDS:
-            self.multiply_all_thus_far(Time(days=0))
-        elif token in FIXED_MAP:
-            self.add_number(FIXED_MAP[token])
-        elif token in ALL_PLURAL_MAP:
-            value = ALL_PLURAL_MAP[token]
-            if conjugate_letters:
-                self.add_number(value)
-            else:
-                if token in HUNDREDS_PLURAL_MAP:
-                    self.multiply_last(value)
-                else:
-                    self.multiply_all_thus_far(value)
 
     def terminate_phrase(self):
         if self.current_phrase_first_index is None:
@@ -393,15 +366,45 @@ class GetHebrewNumbers:
                 self.terminate_phrase()
             elif (word, next_conj_word.raw_word) in EXCEPTIONS_BECAUSE_OF_NEXT_WORD:
                 self.terminate_phrase()
-            elif word in THE_ONE and self.current_phrase_first_index is None \
+            elif word in THE_ONE and self.is_first \
                     and next_conj_word.raw_word not in ["עֶשְׂרֵה", "לַחֹדֶשׁ"] \
                     and next_conj_word.conjugate_letters != [ConjugateLetter.VAV]:
-                self.append_phrase(j)
+                self.add_number(j, 1)
                 self.terminate_phrase()
-            elif word in ALL_NUMBER_WORDS:
-                self.append_phrase(j)
-            elif word in ALL_TIME_WORDS and self.current_phrase_first_index is not None or word in STARTER_TIME_WORDS:
-                self.append_phrase(j)
+            elif word in ALL_TIME_WORDS and not self.is_first or word in STARTER_TIME_WORDS:
+                if self.is_first and word in SHANA_STARTER:
+                    self.multiply_all_thus_far(j, Time(0, is_date=True))
+                elif self.is_first and word in MONTH_STARTER:
+                    self.multiply_all_thus_far(j, Time(months=0, is_date=True))
+                elif self.is_first and word in DAY_STARTER:
+                    self.multiply_all_thus_far(j, Time(days=0, is_date=True))
+                elif word in SHANA_WORDS and not (word == 'שְׁנֵי' and len(self.segment_parts) == 0):
+                    self.multiply_all_thus_far(j, Time(1))
+                elif raw_word in TO_MONTH:
+                    if not isinstance(self.total, Time):
+                        self.multiply_all_thus_far(j, Time(days=1))
+                    else:
+                        self._append_phrase(j)
+                    self.total.is_date = True
+                elif word in MONTH_WORDS:
+                    self.multiply_all_thus_far(j, Time(months=1))
+                elif word in DAY_WORDS:
+                    self.multiply_all_thus_far(j, Time(days=1))
+                elif word in NIGHT_WORDS:
+                    self.multiply_all_thus_far(j, Time(days=0))
+                else:
+                    self.terminate_phrase()
+            elif word in FIXED_MAP:
+                self.add_number(j, FIXED_MAP[word])
+            elif word in ALL_PLURAL_MAP:
+                value = ALL_PLURAL_MAP[word]
+                if conjugate_letters:
+                    self.add_number(j, value)
+                else:
+                    if word in HUNDREDS_PLURAL_MAP:
+                        self.multiply_last(j, value)
+                    else:
+                        self.multiply_all_thus_far(j, value)
             else:
                 self.terminate_phrase()
         self.terminate_phrase()
