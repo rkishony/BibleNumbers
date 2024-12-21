@@ -66,7 +66,7 @@ UNITS_MAP = {
     'שְׁמוֹנֶה': 8,
 }
 
-ORDINAL_MAP = {
+ORDINAL_MAP_M = {
     # Masculine
     'רִאשׁוֹן': 1,
     'שֵׁנִי': 2,
@@ -81,7 +81,9 @@ ORDINAL_MAP = {
     'שְּׁמִינִי': 8,
     'תְּשִׁיעִי': 9,
     'עֲשִׂירִי': 10,
+}
 
+ORDINAL_MAP_F = {
     # Feminine
     'רִאשׁוֹנָה': 1,
     'שְׁנִיָה': 2,
@@ -99,6 +101,7 @@ ORDINAL_MAP = {
     'עֲשִׂירִית': 10,
 }
 
+ORDINAL_MAP = ORDINAL_MAP_M | ORDINAL_MAP_F
 
 TENS_NUM_MAP = {
     # Feminine
@@ -441,12 +444,16 @@ class GetHebrewNumbers:
                 if self.is_first:
                     if previous_conj_word.word in ["לַחֹדֶשׁ"] and conjugate_letters == [ConjugateLetter.HEY]:
                         self.multiply_all_thus_far(None, Time(months=0, is_date=True))
+                value = FIXED_MAP[word]
+                if word in ORDINAL_MAP_F:
+                    if next_conj_word.raw_word and next_conj_word.raw_word.startswith('ה') and ConjugateLetter.HEY not in conjugate_letters:
+                        value = 1 / value
                 if next_conj_word.word in HUNDREDS_PLURAL_MAP:
-                    self.add_number(j, FIXED_MAP[word] * 100)
+                    self.add_number(j, value * 100)
                     j += 2
                     self._append_phrase(j)
                 else:
-                    self.add_number(j, FIXED_MAP[word])
+                    self.add_number(j, value)
             elif word in ALL_PLURAL_MAP:
                 value = ALL_PLURAL_MAP[word]
                 if conjugate_letters:

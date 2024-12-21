@@ -118,10 +118,13 @@ class VerseAndNumericHebrews:
                 bracket = ""
             else:
                 quote = numeric_hebrew.quote
+                num = numeric_hebrew.number
+                if isinstance(num, float):
+                    num = str(int(1 / num)) + ' / 1'
                 if numeric_hebrew.entity:
-                    bracket = f" [{numeric_hebrew.number} {numeric_hebrew.entity}]"
+                    bracket = f" [{num} {numeric_hebrew.entity}]"
                 else:
-                    bracket = f" [{numeric_hebrew.number}]"
+                    bracket = f" [{num}]"
             assert quote == text[start_index:start_index + len(quote)]
             if format == "html":
                 if not is_keyword:
