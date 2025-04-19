@@ -1,3 +1,4 @@
+from pathlib import Path
 from typing import List
 
 from bible_types import VerseAndNumericHebrews
@@ -56,7 +57,7 @@ HTML_END = """
 
 
 def create_html_of_verses_with_numbers(verses_and_numeric_hebrews: List[VerseAndNumericHebrews],
-                                       file_name='verses_with_numbers.html'):
+                                       file_name='index.html'):
     html = HTML_HEAD
     for verse_and_numeric_hebrews in verses_and_numeric_hebrews:
         verse_html, location_html = verse_and_numeric_hebrews.to_html()
@@ -67,7 +68,7 @@ def create_html_of_verses_with_numbers(verses_and_numeric_hebrews: List[VerseAnd
         </div>
     """
     html += HTML_END
-    with open(file_name, 'w') as file:
+    with open(Path('docs') / file_name, 'w') as file:
         file.write(html)
 
 
