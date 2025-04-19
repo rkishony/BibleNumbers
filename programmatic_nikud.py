@@ -381,6 +381,7 @@ class GetHebrewNumbers:
             can_add_next = end + 2 < fist_index_of_next_phrase
             preceding_conj_word = self.conj_words[start - 2] if start - 2 >= 0 else ConjWord()
             following_conj_word = self.conj_words[end + 2] if end + 2 < len(self.conj_words) else ConjWord()
+            last_conj_word = self.conj_words[end]
             if not isinstance(total, Time):
                 if preceding_conj_word.word in DAY_WORDS:
                     total = Time(days=total)
@@ -391,7 +392,8 @@ class GetHebrewNumbers:
                     if can_add_previous:
                         start -= 2
             if not isinstance(total, Time) or total.is_day_only() and not total.is_date:
-                if following_conj_word.raw_word in TO_MONTH | {"בַּחֹדֶשׁ"}:
+                if following_conj_word.raw_word in TO_MONTH | {"בַּחֹדֶשׁ"} \
+                        and last_conj_word.word not in ORDINAL_MAP_F:
                     if isinstance(total, Time):
                         total.is_date = True
                     else:

@@ -54,15 +54,15 @@ def main():
     all_years = [x.number.to_number() for x in all_numeric_hebrews if isinstance(x.number, Time)]
 
     # plot accumulated histogram of all numbers
-    # plt.figure()
-    # ax = plt.gca()
-    # plot_accumulated_histogram(ax, all_numbers, normalize=True, color='r', name='All numbers')
-    # plot_accumulated_histogram(ax, all_years, normalize=True, color='g', name='All years')
-    # plot_accumulated_histogram(ax, not_time, normalize=True, color='b', name='Not time')
-    # ax.legend()
-    # ax.set_xlabel('Value')
-    # ax.set_ylabel('Accumulated fraction')
-    # plt.show()
+    plt.figure()
+    ax = plt.gca()
+    plot_accumulated_histogram(ax, all_numbers, normalize=True, color='r', name='All numbers')
+    plot_accumulated_histogram(ax, all_years, normalize=True, color='g', name='All years')
+    plot_accumulated_histogram(ax, not_time, normalize=True, color='b', name='Not time')
+    ax.legend()
+    ax.set_xlabel('Value')
+    ax.set_ylabel('Accumulated fraction')
+    plt.show()
 
 
 if __name__ == "__main__":
