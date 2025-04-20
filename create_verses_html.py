@@ -119,6 +119,12 @@ HTML_HEAD = """
 
 HTML_END = """
     </div>
+
+    <!-- this will show when no rows match -->
+    <p id="noResults" style="display:none; text-align:center; margin:1em 0; font-weight:bold;">
+      אין תוצאות
+    </p>
+
     <script>
     document.addEventListener('DOMContentLoaded', () => {
       const searchInput   = document.getElementById('searchNumber');
@@ -126,25 +132,35 @@ HTML_END = """
       const rangeMaxInput = document.getElementById('rangeMax');
       const [searchBtn, rangeBtn] = document.querySelectorAll('.search-bar button');
       const rows = Array.from(document.querySelectorAll('.container .row'));
-    
+      const noResults = document.getElementById('noResults');
+
       function getNumberFromRow(row) {
         const span = row.querySelector('.verses span[style*="color:green"]');
         const m = span?.textContent.match(/\d+/);
         return m ? +m[0] : null;
       }
+
       function filterRows(pred) {
-        rows.forEach(r => r.style.display = pred(getNumberFromRow(r)) ? '' : 'none');
+        let anyVisible = false;
+        rows.forEach(r => {
+          const ok = pred(getNumberFromRow(r));
+          r.style.display = ok ? '' : 'none';
+          if (ok) anyVisible = true;
+        });
+        noResults.style.display = anyVisible ? 'none' : '';
       }
-    
+
       searchBtn.addEventListener('click', () => {
         const v = +searchInput.value;
         if (!isNaN(v)) filterRows(n => n === v);
       });
+
       rangeBtn.addEventListener('click', () => {
         const min = +rangeMinInput.value, max = +rangeMaxInput.value;
         if (!isNaN(min) && !isNaN(max)) filterRows(n => n >= min && n <= max);
       });
-    
+
+      // Enter‑key handlers
       searchInput.addEventListener('keydown', e => {
         if (e.key === 'Enter') searchBtn.click();
       });
@@ -155,7 +171,6 @@ HTML_END = """
       );
     });
     </script>
-
 </body>
 </html>
 """
