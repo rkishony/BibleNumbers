@@ -219,6 +219,9 @@
 
     <button id="resetBtn">הצג הכל</button>
 </div>
+<div id="countStats" style="margin: 0 20px 10px; font-size: 1.1em; color: #444;">
+    מספר תוצאות מתאימות: <span id="matchCount">0</span>
+</div>
 <div class="container">
     <!-- START -->
     <div class="row">
@@ -246,10 +249,6 @@
     <!-- END -->
 </div>
 
-<p id="noResults" style="display:none; text-align:center; margin: 0.1em 0; padding: 0.1em 0; font-weight:bold;">
-    אין תוצאות
-</p>
-
 <script>
     document.addEventListener('DOMContentLoaded', () => {
         const searchInput = document.getElementById('searchNumber');
@@ -261,57 +260,78 @@
         const resetBtn = document.getElementById('resetBtn');
 
         const rows = Array.from(document.querySelectorAll('.container .row'));
-        const noResults = document.getElementById('noResults');
+        const matchCountSpan = document.getElementById('matchCount');
 
-        function getNumberFromRow(row) {
-            const span = row.querySelector('.verses span[style*="color:green"]');
-            const m = span?.textContent.match(/\d+/);
-            return m ? +m[0] : null;
+        function getNumbersFromRow(row) {
+            const spans = row.querySelectorAll('.verses span[style*="color:green"]');
+            return Array.from(spans)
+                .map(span => {
+                    const m = span.textContent.match(/\d+/);
+                    return m ? +m[0] : null;
+                })
+                .filter(n => n !== null);
         }
 
-        function filterRows(pred) {
-            let anyVisible = false;
-            rows.forEach(r => {
-                const ok = pred(getNumberFromRow(r));
-                r.style.display = ok ? '' : 'none';
-                if (ok) anyVisible = true;
+        function applyFilter(pred) {
+            let totalMatches = 0;
+            rows.forEach(row => {
+                const nums = getNumbersFromRow(row);
+                const matchedNums = nums.filter(pred);
+                const visible = matchedNums.length > 0;
+                row.style.display = visible ? '' : 'none';
+                if (visible) totalMatches += matchedNums.length;
             });
-            noResults.style.display = anyVisible ? 'none' : '';
+            matchCountSpan.textContent = totalMatches;
         }
 
-        // specific‑number search
+        function showAllAndCount() {
+            let total = 0;
+            rows.forEach(row => {
+                row.style.display = '';
+                const nums = getNumbersFromRow(row);
+                total += nums.length;
+            });
+            matchCountSpan.textContent = total;
+        }
+
+        // --- Event handlers ---
+
         searchBtn.addEventListener('click', () => {
             const v = +searchInput.value;
-            if (!isNaN(v)) filterRows(n => n === v);
+            if (!isNaN(v)) {
+                applyFilter(n => n === v);
+            }
         });
 
-        // range search
         rangeBtn.addEventListener('click', () => {
             const min = +rangeMinInput.value;
             const max = +rangeMaxInput.value;
-            if (!isNaN(min) && !isNaN(max)) filterRows(n => n >= min && n <= max);
+            if (!isNaN(min) && !isNaN(max)) {
+                applyFilter(n => n >= min && n <= max);
+            }
         });
 
-        // reset: clear inputs & show all
         resetBtn.addEventListener('click', () => {
             searchInput.value = '';
             rangeMinInput.value = '';
             rangeMaxInput.value = '';
-            rows.forEach(r => r.style.display = '');
-            noResults.style.display = 'none';
+            showAllAndCount();
         });
 
-        // Enter‑key handlers
         searchInput.addEventListener('keydown', e => {
             if (e.key === 'Enter') searchBtn.click();
         });
-        [rangeMinInput, rangeMaxInput].forEach(input =>
+        [rangeMinInput, rangeMaxInput].forEach(input => {
             input.addEventListener('keydown', e => {
                 if (e.key === 'Enter') rangeBtn.click();
-            })
-        );
+            });
+        });
+
+        // --- Initial count on load ---
+        showAllAndCount();
     });
 </script>
+
 <footer class="sticky-footer">
     <a href="https://github.com/rkishony/BibleNumbers/issues" target="_blank" rel="noopener" class="feedback-link">
         מצאת טעות?
