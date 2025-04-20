@@ -176,17 +176,19 @@ HTML_HEAD = """
         
           /* make the range‑group itself full‑width, but laid out in one row */
           .range-group {
-            width: 100%;
-            margin: 5px 0;
+            display: inline-flex;
             flex-direction: row;
+            gap: 8px;
+            width: auto;
+            margin: 5px auto;
           }
           .range-group label {
             flex: 0 0 auto;  /* label only as wide as its text */
             margin: 0;
           }
           .range-group input {
-            flex: 1 1 0;     /* two inputs share remaining space equally */
-            margin: 0;
+            flex: 0 0 auto;
+            width: 70px;
           }
         }
 
