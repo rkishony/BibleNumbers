@@ -61,9 +61,10 @@
         }
 
         .container {
-            display: flex;
-            flex-direction: column;
-            margin: 0 20px 40px 20px;
+          display: flex;
+          flex-direction: column;
+          margin: 0 20px;           /* no bottom margin */
+          padding-bottom: 20px;     /* same space inside the container */
         }
 
         .row {
@@ -77,46 +78,35 @@
             box-shadow: 0 0 5px rgba(0, 0, 0, 0.05);
         }
 
-        .locations {
-            width: 150px;
-            text-align: right;
-            white-space: nowrap;
-            padding-right: 10px;
-            font-weight: bold;
-            flex-shrink: 0;
-        }
-
-        .verses {
-            flex-grow: 1;
-            text-align: right;
-            word-wrap: break-word;
-            overflow-wrap: break-word;
-            box-sizing: border-box;
-        }
-
-        .container {
-            display: flex;
-            flex-direction: column;
-            margin: 0 20px 80px 20px; /* increase bottom from 40px → 80px */
-        }
-
-        /* sticky footer */
+        /* sticky footer for dedication */
         .sticky-footer {
             position: fixed;
             bottom: 0;
             left: 0;
-            width: 100%;
+            right: 0;
             background-color: #f9f9f9;
-            text-align: left;
             padding: 8px 20px;
             font-size: 0.8em;
             color: #555;
             box-shadow: 0 -1px 5px rgba(0, 0, 0, 0.1);
+
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .sticky-footer .feedback-link {
+            text-decoration: none;
+            color: #4CAF50;
+        }
+
+        .sticky-footer .feedback-link:hover {
+            text-decoration: underline;
         }
 
         /* make location/verse columns fluid instead of fixed px */
         .locations {
-            /* allocate 25% of the row (min 80px), not a rigid 150px */
+            font-family: "Noto Sans Hebrew", sans-serif;
             flex: 0 0 25%;
             min-width: 80px;
             max-width: 150px;
@@ -124,11 +114,23 @@
             overflow-wrap: break-word;
             word-wrap: break-word;
             word-break: break-word;
+            width: 150px;
+            padding-right: 10px;
+            font-weight: bold;
+            flex-shrink: 0;
         }
 
         .verses {
+            font-family: "Noto Sans Hebrew", sans-serif;
             flex: 1 1 75%;
+            flex-grow: 1;
+            text-align: right;
+            word-wrap: break-word;
+            overflow-wrap: break-word;
+            box-sizing: border-box;
         }
+
+
 
         /* breakpoint for small screens (phones) */
         @media (max-width: 600px) {
@@ -200,7 +202,9 @@
 </head>
 <body>
 <a href="https://github.com/rkishony/BibleNumbers" target="_blank" rel="noopener">
-    <img src="transparent_icon.png" alt="תנ״ך מ10פר" class="banner">
+<div style="padding: 0 30px;">
+  <img src="transparent_icon.png" alt="תנ״ך מ10פר" class="banner" style="width: 100%; max-width: 100%;">
+</div>
 </a>
 
 <div class="search-bar">
@@ -209,36 +213,29 @@
     <button id="searchBtn">חפש</button>
 
     <div class="range-group">
-        <label for="rangeMin">מ:</label>
-        <input type="number" id="rangeMin" placeholder="מינימום">
-        <label for="rangeMax">עד:</label>
-        <input type="number" id="rangeMax" placeholder="מקסימום">
+        <input type="number" id="rangeMin" placeholder="מ-">
+        <input type="number" id="rangeMax" placeholder="עד">
     </div>
     <button id="rangeBtn">טווח</button>
 
     <button id="resetBtn">הצג הכל</button>
 </div>
 <div class="container">
-    <!-- enter here -->
+    <!-- START -->
     <div class="row">
-        <div class="locations">עזרא / נחמיה נ ח יג</div>
-        <div class="verses"><span style='color:blue'>וּבַיּוֹם הַשֵּׁנִי</span><span style='color:green'> [יום מספר 2]</span> נֶאֶסְפוּ רָאשֵׁי הָאָבוֹת לְכָל-הָעָם, הַכֹּהֲנִים וְהַלְוִיִּם, אֶל-עֶזְרָא, הַסֹּפֵר--וּלְהַשְׂכִּיל, אֶל-דִּבְרֵי הַתּוֹרָה.</div>
+        <div class="locations">
+            <a href="https://www.sefaria.org/Ezra_Nehemiah.8.13" target="_blank">עזרא / נחמיה נ ח יג</a>
+        </div>
+        <div class="verses">
+            <span class="heb-num">וּבַיּוֹם הַשֵּׁנִי</span>
+            <span class="parsed-num"> [יום מספר 2]</span>
+            נֶאֶסְפוּ רָאשֵׁי הָאָבוֹת לְכָל-הָעָם, הַכֹּהֲנִים וְהַלְוִיִּם, אֶל-עֶזְרָא, הַסֹּפֵר--וּלְהַשְׂכִּיל, אֶל-דִּבְרֵי הַתּוֹרָה.
+        </div>
     </div>
-
-    <div class="row">
-        <div class="locations">עזרא חכלקחכ לקחקכל / נחמיה נ ח יד</div>
-        <div class="verses">וַיִּמְצְאוּ, כָּתוּב בַּתּוֹרָה:  אֲשֶׁר צִוָּה יְהוָה בְּיַד-מֹשֶׁה, אֲשֶׁר יֵשְׁבוּ בְנֵי-יִשְׂרָאֵל בַּסֻּכּוֹת בֶּחָג <span style='color:blue'>בַּחֹדֶשׁ הַשְּׁבִיעִי</span><span style='color:green'> [חודש מספר 7]</span>.</div>
-    </div>
-
-    <div class="row">
-        <div class="locations">עזרא / נחמיה נ ח יח</div>
-        <div class="verses">וַיִּקְרָא בְּסֵפֶר תּוֹרַת הָאֱלֹהִים, יוֹם בְּיוֹם--מִן-הַיּוֹם <span style='color:blue'>הָרִאשׁוֹן</span><span style='color:green'> [1]</span>, עַד הַיּוֹם הָאַחֲרוֹן; וַיַּעֲשׂוּ-חָג <span style='color:blue'>שִׁבְעַת יָמִים</span><span style='color:green'> [7 יום]</span>, <span style='color:blue'>וּבַיּוֹם הַשְּׁמִינִי</span><span style='color:green'> [יום מספר 8]</span> עֲצֶרֶת כַּמִּשְׁפָּט.  {פ}</div>
-    </div>
-
+    <!-- END -->
 </div>
 
-<!-- this will show when no rows match -->
-<p id="noResults" style="display:none; text-align:center; margin:1em 0; font-weight:bold;">
+<p id="noResults" style="display:none; text-align:center; margin: 0.1em 0; padding: 0.1em 0; font-weight:bold;">
     אין תוצאות
 </p>
 
@@ -305,7 +302,10 @@
     });
 </script>
 <footer class="sticky-footer">
-    מוקדש באהבה לילדתי יעל קישוני
+  <span>מוקדש באהבה לילדתי יעל קישוני</span>
+  <a href="https://github.com/rkishony/BibleNumbers/issues" target="_blank" rel="noopener" class="feedback-link">
+    מצאת טעות?
+  </a>
 </footer>
 </body>
 </html>
