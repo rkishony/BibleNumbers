@@ -169,22 +169,24 @@
             margin: 5px 0;
           }
         
-          /* make the range‑group itself full‑width, but laid out in one row */
-          .range-group {
-            display: inline-flex;
-            flex-direction: row;
-            gap: 8px;
-            width: auto;
-            margin: 5px auto;
-          }
-          .range-group label {
-            flex: 0 0 auto;  /* label only as wide as its text */
-            margin: 0;
-          }
-          .range-group input {
-            flex: 0 0 auto;
-            width: 70px;
-          }
+        .range-group {
+          display: flex;
+          flex-direction: row;
+          align-self: flex-start;  /* don’t stretch to full width */
+          gap: 8px;
+          margin: 5px 0;
+          width: auto;            /* shrink to fit contents */
+        }
+        
+        .range-group label {
+          margin: 0;
+          white-space: nowrap;    /* keep label next to its input */
+        }
+        
+        .range-group input {
+          flex: 0 0 60px;         /* fixed-ish width, no growing */
+          margin: 0;
+        }
         }
 
   </style>
