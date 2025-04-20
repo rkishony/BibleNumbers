@@ -118,6 +118,39 @@ HTML_HEAD = """
           color: #555;
           box-shadow: 0 -1px 5px rgba(0,0,0,0.1);
         }
+        
+        /* make location/verse columns fluid instead of fixed px */
+        .locations {
+          /* allocate 25% of the row (min 80px), not a rigid 150px */
+          flex: 0 0 25%;
+          min-width: 80px;
+          max-width: 150px;
+        }
+        .verses {
+          flex: 1 1 75%;
+        }
+        
+        /* breakpoint for small screens (phones) */
+        @media (max-width: 600px) {
+          /* stack search controls vertically */
+          .search-bar {
+            flex-direction: column;
+            align-items: stretch;
+          }
+          .search-bar label,
+          .search-bar input,
+          .search-bar button {
+            width: 100%;
+            margin: 5px 0;
+          }
+        
+          /* make location column narrower on tiny screens */
+          .locations {
+            flex: 0 0 30%;
+            min-width: 60px;
+          }
+        }        
+        
   </style>
 </head>
 <body>
