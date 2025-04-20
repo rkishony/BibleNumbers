@@ -9,43 +9,111 @@ HTML_HEAD = """
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Bible Verses with Numbers</title>
+    <title>תנ״ך מ10פר</title>
     <style>
         body {
-            font-family: Arial, sans-serif;
+            font-family: "Arial", sans-serif;
             margin: 0;
             padding: 0;
             direction: rtl;
+            background-color: #f9f9f9;
+            color: #222;
         }
+
+        .banner {
+            width: 100%;
+            max-height: 150px;
+            object-fit: contain;
+            display: block;
+            margin: 10px auto;
+        }
+
+        .search-bar {
+            background-color: #fff;
+            padding: 20px;
+            margin: 0 20px 20px 20px;
+            border-radius: 12px;
+            box-shadow: 0 0 10px rgba(0,0,0,0.05);
+            display: flex;
+            flex-wrap: wrap;
+            gap: 15px;
+            align-items: center;
+            justify-content: flex-start;
+        }
+
+        .search-bar input[type="number"] {
+            padding: 8px 12px;
+            font-size: 1em;
+            border: 1px solid #ccc;
+            border-radius: 8px;
+            width: 120px;
+        }
+
+        .search-bar button {
+            padding: 8px 16px;
+            font-size: 1em;
+            background-color: #4CAF50;
+            color: white;
+            border: none;
+            border-radius: 8px;
+            cursor: pointer;
+        }
+
+        .search-bar button:hover {
+            background-color: #45a049;
+        }
+
         .container {
             display: flex;
             flex-direction: column;
-            margin: 20px;
+            margin: 0 20px 40px 20px;
         }
+
         .row {
             display: flex;
-            flex-direction: row; /* Locations on the right, verses on the left */
+            flex-direction: row;
             margin-bottom: 10px;
-            align-items: flex-start; /* Align rows at the top */
+            align-items: flex-start;
+            background-color: #fff;
+            border-radius: 8px;
+            padding: 10px;
+            box-shadow: 0 0 5px rgba(0,0,0,0.05);
         }
+
         .locations {
-            width: 150px; /* Fixed width for the location column */
+            width: 150px;
             text-align: right;
             white-space: nowrap;
-            padding-right: 10px; /* Space between location and verse */
-            flex-shrink: 0; /* Prevent locations from shrinking */
+            padding-right: 10px;
+            font-weight: bold;
+            flex-shrink: 0;
         }
+
         .verses {
-            flex-grow: 1; /* Allow the verse column to shrink */
-            text-align: right; /* Align text to the right */
-            word-wrap: break-word; /* Allow wrapping for long text */
-            overflow-wrap: break-word; /* Ensures compatibility with older browsers */
-            box-sizing: border-box; /* Ensures consistent box sizing */
-            display: block; /* Prevent alignment issues with inline behavior */
+            flex-grow: 1;
+            text-align: right;
+            word-wrap: break-word;
+            overflow-wrap: break-word;
+            box-sizing: border-box;
         }
     </style>
 </head>
 <body>
+    <img src="transparent_icon.png" alt="תנ״ך מ10פר" class="banner">
+
+    <div class="search-bar">
+        <label for="searchNumber">חיפוש מספר:</label>
+        <input type="number" id="searchNumber" placeholder="לדוגמה: 40">
+        <button>חפש</button>
+
+        <label for="rangeMin">מ:</label>
+        <input type="number" id="rangeMin" placeholder="מינימום">
+
+        <label for="rangeMax">עד:</label>
+        <input type="number" id="rangeMax" placeholder="מקסימום">
+        <button>טווח</button>
+    </div>
+
     <div class="container">
 """
 
