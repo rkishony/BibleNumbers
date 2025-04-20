@@ -6,6 +6,8 @@ import operator
 import numpy as np
 from pydantic import BaseModel
 
+from booknames import get_book_num
+from letters_to_num import convert_hebrew_string_to_num
 from nikud_utils import remove_nikud
 from utils import find_all_start_indices
 
@@ -162,8 +164,13 @@ class VerseAndNumericHebrews:
 
     def to_html(self) -> Tuple[str, str]:
         verse_html = self._to_formatted_str("html")
-        location_html = f"{self.verse.book} {self.verse.chapter} {self.verse.letter}"
-
+        html = '<a href="{link}" target="_blank">{location}</a>'
+        location = f"{self.verse.book} {self.verse.chapter} {self.verse.letter}"
+        booknum = get_book_num(self.verse.book)
+        link = (f"https://www.mgketer.org/mikra/{booknum}/"
+                f"{convert_hebrew_string_to_num(self.verse.chapter)}/"
+                f"{convert_hebrew_string_to_num(self.verse.letter)}")
+        location_html = html.format(link=link, location=location)
         return verse_html, location_html
 
 
