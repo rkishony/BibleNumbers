@@ -1,20 +1,26 @@
+import numpy as np
 from PIL import Image
 
-img = Image.open("TanahMesupar.png").convert("RGBA")
+img = Image.open("tanah_mesupar2.png").convert("RGBA")
 datas = img.getdata()
+arr = np.array(img)
+
+numpy_arr = img.load()
+
 
 orange = (255, 165, 0, 255)
 grey = (150, 150, 150, 255)
 transparent = (0, 0, 0, 0)
-new_data = []
-for item in datas:
-    # Assume background is near-black (e.g., RGB < 30)
-    if item[0] > item[2] * 2:
-        new_data.append(orange)
-    elif item[0] > 100 and item[1] > 100 and item[2] > 100:
-        new_data.append(grey)
-    else:
-        new_data.append(transparent)
 
-img.putdata(new_data)
-img.save("transparent_icon.png")
+is_letter = (arr[:, :, 3] != 0) & (arr[:, :, 0] != 255)
+is_red = (arr[:, :, 0] == 255) & (arr[:, :, 1] == 0) & (arr[:, :, 2] == 0)
+
+arr = np.zeros(arr.shape, dtype=np.uint8)
+arr[is_letter] = grey
+arr[is_red] = orange
+
+arr = arr[120:-200, :, :]  # remove the white space on the left and right
+
+# save
+img = Image.fromarray(arr)
+img.save("../docs/transparent_icon.png")
