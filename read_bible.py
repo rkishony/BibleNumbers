@@ -50,6 +50,14 @@ def get_book_from_html(html_content: str, remove_punctuations: bool = True) -> V
         bold_elements = paragraph.find_all("b")
         for bold_element in bold_elements:
             chapter_and_verse = bold_element.get_text(strip=True)
+            # strip from the beginning and end of anything that is not a hebrew letter:
+            chapter_and_verse = re.sub(r'^[^א-ת]+|[^א-ת]+$', '', chapter_and_verse)
+            if '\xa0' in chapter_and_verse:
+                # Skip the verse if it contains '\xa0'
+                book_letter, chapter_and_verse = chapter_and_verse.split('\xa0')
+                book_letter = ' ' + book_letter.strip()
+            else:
+                book_letter = ''
             chapter_number, verse_number = chapter_and_verse.split(",")
             verse_text = bold_element.find_next_sibling(string=True)
 
@@ -60,7 +68,12 @@ def get_book_from_html(html_content: str, remove_punctuations: bool = True) -> V
                 verse_text = clean_text(verse_text)
             else:
                 verse_text = verse_text.strip()
-            verses.append(Verse(book_name, chapter_number, verse_number, verse_text))
+            fixed_book_name = book_name + book_letter
+            if fixed_book_name == 'עזרא / נחמיה ע':
+                fixed_book_name = 'עזרא'
+            elif fixed_book_name == 'עזרא / נחמיה נ':
+                fixed_book_name = 'נחמיה'
+            verses.append(Verse(fixed_book_name, chapter_number, verse_number, verse_text))
 
     return verses
 
