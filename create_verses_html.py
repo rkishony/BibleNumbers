@@ -121,47 +121,41 @@ HTML_END = """
     </div>
     <script>
     document.addEventListener('DOMContentLoaded', () => {
-      // grab inputs
       const searchInput   = document.getElementById('searchNumber');
       const rangeMinInput = document.getElementById('rangeMin');
       const rangeMaxInput = document.getElementById('rangeMax');
-      // grab buttons by their order in the .search-bar
       const [searchBtn, rangeBtn] = document.querySelectorAll('.search-bar button');
-      // all your rows
       const rows = Array.from(document.querySelectorAll('.container .row'));
-
-      // helper: extract the first integer found in the green span of a row
+    
       function getNumberFromRow(row) {
         const span = row.querySelector('.verses span[style*="color:green"]');
-        if (!span) return null;
-        const m = span.textContent.match(/\d+/);
-        return m ? parseInt(m[0], 10) : null;
+        const m = span?.textContent.match(/\d+/);
+        return m ? +m[0] : null;
       }
-
-      // show only rows where predicate(num) is true
-      function filterRows(predicate) {
-        rows.forEach(row => {
-          const num = getNumberFromRow(row);
-          row.style.display = (num !== null && predicate(num)) ? '' : 'none';
-        });
+      function filterRows(pred) {
+        rows.forEach(r => r.style.display = pred(getNumberFromRow(r)) ? '' : 'none');
       }
-
-      // specific-number search
+    
       searchBtn.addEventListener('click', () => {
-        const v = parseInt(searchInput.value, 10);
-        if (isNaN(v)) return;
-        filterRows(n => n === v);
+        const v = +searchInput.value;
+        if (!isNaN(v)) filterRows(n => n === v);
       });
-
-      // range search
       rangeBtn.addEventListener('click', () => {
-        const min = parseInt(rangeMinInput.value, 10);
-        const max = parseInt(rangeMaxInput.value, 10);
-        if (isNaN(min) || isNaN(max)) return;
-        filterRows(n => n >= min && n <= max);
+        const min = +rangeMinInput.value, max = +rangeMaxInput.value;
+        if (!isNaN(min) && !isNaN(max)) filterRows(n => n >= min && n <= max);
       });
+    
+      searchInput.addEventListener('keydown', e => {
+        if (e.key === 'Enter') searchBtn.click();
+      });
+      [rangeMinInput, rangeMaxInput].forEach(input =>
+        input.addEventListener('keydown', e => {
+          if (e.key === 'Enter') rangeBtn.click();
+        })
+      );
     });
     </script>
+
 </body>
 </html>
 """
