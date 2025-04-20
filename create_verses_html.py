@@ -149,7 +149,16 @@ HTML_HEAD = """
             flex: 0 0 30%;
             min-width: 60px;
           }
-        }        
+        }
+        .row {
+          /* if you already have ‘gap’ here, just bump it up */
+          gap: 12px;  
+        }
+        
+        /* make the number‑inputs narrower on desktop */
+        .search-bar input[type="number"] {
+          width: 80px;  /* was 120px */
+        }
         
   </style>
 </head>
