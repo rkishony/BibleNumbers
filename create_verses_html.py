@@ -119,6 +119,49 @@ HTML_HEAD = """
 
 HTML_END = """
     </div>
+    <script>
+    document.addEventListener('DOMContentLoaded', () => {
+      // grab inputs
+      const searchInput   = document.getElementById('searchNumber');
+      const rangeMinInput = document.getElementById('rangeMin');
+      const rangeMaxInput = document.getElementById('rangeMax');
+      // grab buttons by their order in the .search-bar
+      const [searchBtn, rangeBtn] = document.querySelectorAll('.search-bar button');
+      // all your rows
+      const rows = Array.from(document.querySelectorAll('.container .row'));
+
+      // helper: extract the first integer found in the green span of a row
+      function getNumberFromRow(row) {
+        const span = row.querySelector('.verses span[style*="color:green"]');
+        if (!span) return null;
+        const m = span.textContent.match(/\d+/);
+        return m ? parseInt(m[0], 10) : null;
+      }
+
+      // show only rows where predicate(num) is true
+      function filterRows(predicate) {
+        rows.forEach(row => {
+          const num = getNumberFromRow(row);
+          row.style.display = (num !== null && predicate(num)) ? '' : 'none';
+        });
+      }
+
+      // specific-number search
+      searchBtn.addEventListener('click', () => {
+        const v = parseInt(searchInput.value, 10);
+        if (isNaN(v)) return;
+        filterRows(n => n === v);
+      });
+
+      // range search
+      rangeBtn.addEventListener('click', () => {
+        const min = parseInt(rangeMinInput.value, 10);
+        const max = parseInt(rangeMaxInput.value, 10);
+        if (isNaN(min) || isNaN(max)) return;
+        filterRows(n => n >= min && n <= max);
+      });
+    });
+    </script>
 </body>
 </html>
 """
