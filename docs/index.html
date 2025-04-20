@@ -97,18 +97,19 @@
     <img src="transparent_icon.png" alt="תנ״ך מ10פר" class="banner">
 
     <div class="search-bar">
-        <label for="searchNumber">חיפוש מספר:</label>
-        <input type="number" id="searchNumber" placeholder="לדוגמה: 40">
-        <button>חפש</button>
-
-        <label for="rangeMin">מ:</label>
-        <input type="number" id="rangeMin" placeholder="מינימום">
-
-        <label for="rangeMax">עד:</label>
-        <input type="number" id="rangeMax" placeholder="מקסימום">
-        <button>טווח</button>
+      <label for="searchNumber">חיפוש מספר:</label>
+      <input type="number" id="searchNumber" placeholder="לדוגמה: 40">
+      <button id="searchBtn">חפש</button>
+    
+      <label for="rangeMin">מ:</label>
+      <input type="number" id="rangeMin" placeholder="מינימום">
+    
+      <label for="rangeMax">עד:</label>
+      <input type="number" id="rangeMax" placeholder="מקסימום">
+      <button id="rangeBtn">טווח</button>
+    
+      <button id="resetBtn">הצג הכל</button>
     </div>
-
     <div class="container">
 
         <div class="row">
@@ -15333,16 +15334,20 @@
       const searchInput   = document.getElementById('searchNumber');
       const rangeMinInput = document.getElementById('rangeMin');
       const rangeMaxInput = document.getElementById('rangeMax');
-      const [searchBtn, rangeBtn] = document.querySelectorAll('.search-bar button');
+    
+      const searchBtn = document.getElementById('searchBtn');
+      const rangeBtn  = document.getElementById('rangeBtn');
+      const resetBtn  = document.getElementById('resetBtn');
+    
       const rows = Array.from(document.querySelectorAll('.container .row'));
       const noResults = document.getElementById('noResults');
-
+    
       function getNumberFromRow(row) {
         const span = row.querySelector('.verses span[style*="color:green"]');
         const m = span?.textContent.match(/\d+/);
         return m ? +m[0] : null;
       }
-
+    
       function filterRows(pred) {
         let anyVisible = false;
         rows.forEach(r => {
@@ -15352,17 +15357,29 @@
         });
         noResults.style.display = anyVisible ? 'none' : '';
       }
-
+    
+      // specific‑number search
       searchBtn.addEventListener('click', () => {
         const v = +searchInput.value;
         if (!isNaN(v)) filterRows(n => n === v);
       });
-
+    
+      // range search
       rangeBtn.addEventListener('click', () => {
-        const min = +rangeMinInput.value, max = +rangeMaxInput.value;
+        const min = +rangeMinInput.value;
+        const max = +rangeMaxInput.value;
         if (!isNaN(min) && !isNaN(max)) filterRows(n => n >= min && n <= max);
       });
-
+    
+      // reset: clear inputs & show all
+      resetBtn.addEventListener('click', () => {
+        searchInput.value = '';
+        rangeMinInput.value = '';
+        rangeMaxInput.value = '';
+        rows.forEach(r => r.style.display = '');
+        noResults.style.display = 'none';
+      });
+    
       // Enter‑key handlers
       searchInput.addEventListener('keydown', e => {
         if (e.key === 'Enter') searchBtn.click();
