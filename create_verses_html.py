@@ -159,7 +159,37 @@ HTML_HEAD = """
         .search-bar input[type="number"] {
           width: 80px;  /* was 120px */
         }
+        /* --- always keep min/max as a flex row, even on desktop --- */
+        .range-group {
+          display: flex;
+          gap: 8px;
+          align-items: center;
+        }
         
+        /* --- mobile tweaks (up to 600px wide) --- */
+        @media (max-width: 600px) {
+          /* everything except the range‑group still goes full width */
+          .search-bar > :not(.range-group) {
+            width: 100%;
+            margin: 5px 0;
+          }
+        
+          /* make the range‑group itself full‑width, but laid out in one row */
+          .range-group {
+            width: 100%;
+            margin: 5px 0;
+            flex-direction: row;
+          }
+          .range-group label {
+            flex: 0 0 auto;  /* label only as wide as its text */
+            margin: 0;
+          }
+          .range-group input {
+            flex: 1 1 0;     /* two inputs share remaining space equally */
+            margin: 0;
+          }
+        }
+
   </style>
 </head>
 <body>
@@ -169,14 +199,15 @@ HTML_HEAD = """
 
     <div class="search-bar">
       <label for="searchNumber">חיפוש מספר:</label>
-      <input type="number" id="searchNumber" placeholder="לדוגמה: 40">
+      <input type="number" id="searchNumber" placeholder="מספר">
       <button id="searchBtn">חפש</button>
     
-      <label for="rangeMin">מ:</label>
-      <input type="number" id="rangeMin" placeholder="מינימום">
-    
-      <label for="rangeMax">עד:</label>
-      <input type="number" id="rangeMax" placeholder="מקסימום">
+      <div class="range-group">
+        <label for="rangeMin">מ:</label>
+        <input type="number" id="rangeMin" placeholder="מינימום">
+        <label for="rangeMax">עד:</label>
+        <input type="number" id="rangeMax" placeholder="מקסימום">
+      </div>
       <button id="rangeBtn">טווח</button>
     
       <button id="resetBtn">הצג הכל</button>
