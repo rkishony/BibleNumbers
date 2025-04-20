@@ -99,7 +99,26 @@ HTML_HEAD = """
             overflow-wrap: break-word;
             box-sizing: border-box;
         }
-    </style>
+        .container {
+          display: flex;
+          flex-direction: column;
+          margin: 0 20px 80px 20px; /* increase bottom from 40px → 80px */
+        }
+    
+        /* sticky footer */
+        .sticky-footer {
+          position: fixed;
+          bottom: 0;
+          left: 0;
+          width: 100%;
+          background-color: #f9f9f9;
+          text-align: left;
+          padding: 8px 20px;
+          font-size: 0.8em;
+          color: #555;
+          box-shadow: 0 -1px 5px rgba(0,0,0,0.1);
+        }
+  </style>
 </head>
 <body>
     <a href="https://github.com/rkishony/BibleNumbers" target="_blank" rel="noopener">
@@ -193,7 +212,9 @@ HTML_END = """
       );
     });
     </script>
-</body>
+      <footer class="sticky-footer">
+        מוקדש באהבה לילדתי יעל קישוני
+      </footer></body>
 </html>
 """
 
