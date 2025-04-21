@@ -258,7 +258,6 @@
     </div>
     <!-- END -->
 </div>
-
 <script>
     document.addEventListener('DOMContentLoaded', () => {
         const searchInput = document.getElementById('searchNumber');
@@ -276,8 +275,8 @@
             const spans = row.querySelectorAll('.verses span[style*="color:green"]');
             return Array.from(spans)
                 .map(span => {
-                    const m = span.textContent.match(/\d+/);
-                    return m ? +m[0] : null;
+                    const match = span.textContent.match(/\d+/);
+                    return match ? +match[0] : null;
                 })
                 .filter(n => n !== null);
         }
@@ -286,30 +285,29 @@
             let totalMatches = 0;
             rows.forEach(row => {
                 const nums = getNumbersFromRow(row);
-                const matchedNums = nums.filter(pred);
-                const visible = matchedNums.length > 0;
+                const matched = nums.filter(pred);
+                const visible = matched.length > 0;
                 row.style.display = visible ? '' : 'none';
-                if (visible) totalMatches += matchedNums.length;
+                if (visible) totalMatches += matched.length;
             });
             matchCountSpan.textContent = totalMatches;
         }
 
-        function showAllAndCount() {
-            let total = 0;
-            rows.forEach(row => {
-                row.style.display = '';
-                const nums = getNumbersFromRow(row);
-                total += nums.length;
-            });
-            matchCountSpan.textContent = total;
+        function scrollToResults() {
+            const firstVisible = rows.find(row => row.style.display !== 'none');
+            if (firstVisible) {
+                const y = firstVisible.getBoundingClientRect().top + window.pageYOffset;
+                window.scrollTo({ top: y - 60, behavior: 'smooth' });  // 60px offset to keep #countStats visible
+            }
         }
 
-        // --- Event handlers ---
+        // --- Event Handlers ---
 
         searchBtn.addEventListener('click', () => {
             const v = +searchInput.value;
             if (!isNaN(v)) {
                 applyFilter(n => n === v);
+                scrollToResults();
             }
         });
 
@@ -318,6 +316,7 @@
             const max = +rangeMaxInput.value;
             if (!isNaN(min) && !isNaN(max)) {
                 applyFilter(n => n >= min && n <= max);
+                scrollToResults();
             }
         });
 
@@ -325,20 +324,22 @@
             searchInput.value = '';
             rangeMinInput.value = '';
             rangeMaxInput.value = '';
-            showAllAndCount();
+            applyFilter(n => n >= 0 && n <= 100000000);
+            scrollToResults();
         });
 
         searchInput.addEventListener('keydown', e => {
             if (e.key === 'Enter') searchBtn.click();
         });
+
         [rangeMinInput, rangeMaxInput].forEach(input => {
             input.addEventListener('keydown', e => {
                 if (e.key === 'Enter') rangeBtn.click();
             });
         });
 
-        // --- Initial count on load ---
-        showAllAndCount();
+        // --- Initial State ---
+        applyFilter(n => n >= 0 && n <= 100000000);
     });
 </script>
 
@@ -346,7 +347,7 @@
     <a href="https://github.com/rkishony/BibleNumbers/issues" target="_blank" rel="noopener" class="feedback-link">
         מצאת טעות?
     </a>
-    <span>מוקדש לילדתי יעל שאוהבת תנ״ך סיפורים ומספרים</span>
+    <span>באהבה לילדתי יעל שאוהבת תנ״ך סיפורים ומספרים</span>
 </footer>
 </body>
 </html>
