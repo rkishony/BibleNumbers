@@ -2,9 +2,16 @@
 
 # Bible Numbers
 
-*Purpose.* An attempt to find and parse all the numbers in the Bible.
+*Purpose.* An attempt to programmatically find and parse all the numbers in the Bible.
 
-### Search the bible for numbers:
+- Find and parse all the numbers.
+- Distinguish years, months and days.
+- Distinguish period counts.
+
+### Webpage for searching the Bible for numbers:
+
+The project creates the following webpage for searching the Bible for numbers:
+
 [All Bible Numbers](https://rkishony.github.io/BibleNumbers/index.html)
 
 ### Statistics
@@ -13,12 +20,15 @@
 
 ### Development
 
-Clone the package. Run:
+Clone the package. To programmatically search for numbers, run:
 ```python
 python find_programmatic.py
 ```
 
+### Related project
+- [Numbers in Bible - json format](https://github.com/elfifo4/numbers-in-bible)
+
 ### Dedicated
-To my dear dauther Yael, who loves the Bible, stories, and numbers.
+To my dear daughter Yael, who loves the Bible, stories, and numbers.
 
 לילדתי יעל שאוהבת תנ״ך, סיפורים ומספרים
