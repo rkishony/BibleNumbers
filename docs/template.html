@@ -18,6 +18,17 @@
 
     <link rel="shortcut icon" href="favicon.png">
     <style>
+        /* Hide number input spinners (Chrome, Safari, Edge) */
+        input[type="number"]::-webkit-inner-spin-button,
+        input[type="number"]::-webkit-outer-spin-button {
+            -webkit-appearance: none;
+            margin: 0;
+        }
+
+        /* Hide number input spinners (Firefox) */
+        input[type="number"] {
+            -moz-appearance: textfield;
+        }
         body {
             font-family: "Arial", sans-serif;
             margin: 0;
@@ -218,7 +229,7 @@
 
 <div class="search-bar">
     <label for="searchNumber">חיפוש מספר:</label>
-    <input type="number" id="searchNumber" placeholder="מספר">
+    <input type="number" id="searchNumber" placeholder="למשל 40">
     <button id="searchBtn">חפש</button>
 
     <div class="range-group">
@@ -230,7 +241,7 @@
     <button id="resetBtn">הצג הכל</button>
 </div>
 <div id="countStats" style="margin: 0 20px 10px; font-size: 1.1em; color: #444;">
-    מספר תוצאות מתאימות: <span id="matchCount">0</span>
+    <span id="matchTitle">כל המספרים בתנ״ך</span>: <span id="matchCount">0</span>
 </div>
 <div class="container">
     <!-- START -->
@@ -270,6 +281,8 @@
 
         const rows = Array.from(document.querySelectorAll('.container .row'));
         const matchCountSpan = document.getElementById('matchCount');
+        const matchTitle = document.getElementById('matchTitle');
+
 
         function getNumbersFromRow(row) {
             const spans = row.querySelectorAll('.verses span[style*="color:green"]');
@@ -307,6 +320,7 @@
             const v = +searchInput.value;
             if (!isNaN(v)) {
                 applyFilter(n => n === v);
+                matchTitle.textContent = 'מספר תוצאות מתאימות';
                 scrollToResults();
             }
         });
@@ -316,6 +330,7 @@
             const max = +rangeMaxInput.value;
             if (!isNaN(min) && !isNaN(max)) {
                 applyFilter(n => n >= min && n <= max);
+                matchTitle.textContent = 'מספר תוצאות בטווח';
                 scrollToResults();
             }
         });
@@ -326,6 +341,7 @@
             rangeMaxInput.value = '';
             applyFilter(n => n >= 0 && n <= 100000000);
             scrollToResults();
+            matchTitle.textContent = 'כל המספרים בתנ״ך';
         });
 
         searchInput.addEventListener('keydown', e => {
