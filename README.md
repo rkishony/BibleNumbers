@@ -9,8 +9,7 @@
 
 ### Statistics
 
-![Bible number distribution](https://github.com/rkishony/BibleNumbers/blob/8ca73fbe4118074ac26461028e47e3dacd33e3a7/docs
-/all_numbers.png)
+![Bible number distribution](https://github.com/rkishony/BibleNumbers/blob/8ca73fbe4118074ac26461028e47e3dacd33e3a7/docs/all_numbers.png)
 
 ### Development
 
@@ -20,6 +19,6 @@ python find_programmatic.py
 ```
 
 ### Dedicated
-Dedicated to my dear dauther Yael Kishony.
+To my dear dauther Yael, who loves the Bible, stories, and numbers.
 
-מוקדש באהבה לילדתי יעל קישוני
+לילדתי יעל שאוהבת תנ״ך, סיפורים ומספרים
